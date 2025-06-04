@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sales System</title>
+  </head>
+  <body>
+    {% if user.is_authenticated %}
+    <p>
+      Logged in as {{ user.username }} ({{ user.role }}) |
+      <form action="{% url 'logout' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" style="background:none; border:none; color:blue; cursor:pointer;">
+          Logout
+        </button>
+      </form>
+      {% if user.role == 'admin' %} |
+      <a href="{% url 'create_user' %}">Create User</a>
+      {% endif %}
+    </p>
+    {% endif %}
+
+    <hr />
+    {% block content %}{% endblock %}
+  </body>
+</html>

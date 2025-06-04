@@ -1,0 +1,20 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Dashboard</h2>
+<p>Welcome, {{ user.username }} ({{ user.role }})!</p>
+
+<ul>
+  <li><a href="{% url 'item_list' %}">View Inventory</a></li>
+  <li><a href="{% url 'restock_item' %}">Restock Items</a></li>
+  {% if user.role == 'admin' %}
+  <li><a href="{% url 'create_user' %}">Create New User</a></li>
+  {% endif %}
+</ul>
+
+<!-- We will replace this with stats like:
+- total daily sales
+- credits
+- low stocks
+- total SKUs
+-->
+<p style="color: gray">[Sales & stock summaries coming in Phase 4]</p>
+{% endblock %}
