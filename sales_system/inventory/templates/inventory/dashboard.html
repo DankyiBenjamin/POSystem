@@ -1,19 +1,31 @@
 {% extends 'base.html' %} {% block content %}
-<h2>Dashboard</h2>
-<h3>System Summary</h3>
-<ul>
-  <li>
-    <a href="{% url 'low_stock_list' %}">
-      🔻 Low Stock Items: {{ low_stock_count }}
-    </a>
-  </li>
-</ul>
 
-<!-- We will replace this with stats like:
-- total daily sales
-- credits
-- low stocks
-- total SKUs
--->
-<p style="color: gray">[Sales & stock summaries coming in Phase 4]</p>
+<h2>📊 Dashboard</h2>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+  <div style="border: 1px solid #ccc; padding: 20px; width: 200px">
+    <h3>💰 Sales Today</h3>
+    <p>GHC {{ total_sales_today }}</p>
+    <a href="{% url 'sales:sales_list' %}">View Details</a>
+  </div>
+
+  <div style="border: 1px solid #ccc; padding: 20px; width: 200px">
+    <h3>💳 Outstanding Credits</h3>
+    <p>{{ total_credits }}</p>
+    <a href="{% url 'sales:credit_list' %}">View Details</a>
+  </div>
+
+  <div style="border: 1px solid #ccc; padding: 20px; width: 200px">
+    <h3>📦 Total Items</h3>
+    <p>{{ total_inventory_items }}</p>
+    <a href="{% url 'item_list' %}">View Inventory</a>
+  </div>
+
+  <div style="border: 1px solid #f55; padding: 20px; width: 200px">
+    <h3 style="color: red">⚠️ Low Stock</h3>
+    <p>{{ low_stock_count }}</p>
+    <a href="{% url 'low_stock_list' %}">View Items</a>
+  </div>
+</div>
+
 {% endblock %}

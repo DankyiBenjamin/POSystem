@@ -1,12 +1,26 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Item, Restock
+from sales.models import Sale, Credit
+from django.utils.timezone import now
 from .forms import ItemForm, RestockForm
 
 
 @login_required
 def dashboard_view(request):
     # view information at a glance
+
+    today = now().date()
+
+    # 1. Total sales made today
+    sales_today = Sale.objects.filter(closed_at__date=today)
+    total_sales_today = sum(s.total_sales for s in sales_today)
+
+    # 2. Total outstanding credits (unpaid)
+    total_credits = Credit.objects.filter(paid=False).count()
+
+    # 3. Total items in stock
+    total_inventory_items = Item.objects.count()
 
     # low stock items
     low_stock_items = [item for item in Item.objects.all()
@@ -15,7 +29,9 @@ def dashboard_view(request):
 
     # context
     context = {
-        'low_stock_items': low_stock_items,
+        'total_sales_today': total_sales_today,
+        'total_credits': total_credits,
+        'total_inventory_items': total_inventory_items,
         'low_stock_count': low_stock_count,
     }
     return render(request, 'inventory/dashboard.html', context)

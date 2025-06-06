@@ -14,7 +14,7 @@
   <tr>
     <td>{{ item.name }}</td>
     <td>{{ item.quantity }}</td>
-    <td>{{ item.price }}</td>
+    <td>GHC {{ item.price }}</td>
     <td>{% if item.is_low_stock %}⚠️ Low{% else %}✅{% endif %}</td>
     <td><a href="{% url 'update_item' item.id %}">Edit</a></td>
   </tr>
