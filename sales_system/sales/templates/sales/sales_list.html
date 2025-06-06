@@ -1,0 +1,21 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Sales History</h2>
+<table>
+  <tr>
+    <th>Date</th>
+    <th>User</th>
+    <th>Customer</th>
+    <th>Customer Number</th>
+    <th>Total</th>
+  </tr>
+  {% for sale in sales %}
+  <tr>
+    <td>{{ sale.closed_at }}</td>
+    <td>{{ sale.closed_by }}</td>
+    <td>{{ sale.customer_name }}</td>
+    <td>{{ sale.customer_phone_number }}</td>
+    <td>{{ sale.total_sales }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

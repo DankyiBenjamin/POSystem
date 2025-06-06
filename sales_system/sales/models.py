@@ -43,10 +43,15 @@ class Sale(models.Model):
         max_digits=15, decimal_places=2, default=0)
     closed_by = models.ForeignKey(User, on_delete=models.CASCADE)
     closed_at = models.DateTimeField(auto_now_add=True)
+    customer_name = models.CharField(max_length=255, null=True, blank=True)
+
+    customer_phone_number = models.CharField(
+        max_length=20, null=True, blank=True)
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, null=True)
 
-    def __str__(self):
-        return f"Sale closed by {self.closed_by} on {self.closed_at}"
+
+def __str__(self):
+    return f"Sale closed by {self.closed_by} on {self.closed_at}"
 
 
 class SaleItem(models.Model):

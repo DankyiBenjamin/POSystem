@@ -7,7 +7,18 @@ from .forms import ItemForm, RestockForm
 @login_required
 def dashboard_view(request):
     # view information at a glance
-    return render(request, 'inventory/dashboard.html')
+
+    # low stock items
+    low_stock_items = [item for item in Item.objects.all()
+                       if item.is_low_stock()]
+    low_stock_count = len(low_stock_items)
+
+    # context
+    context = {
+        'low_stock_items': low_stock_items,
+        'low_stock_count': low_stock_count,
+    }
+    return render(request, 'inventory/dashboard.html', context)
 
 
 @login_required
@@ -57,3 +68,12 @@ def restock_item(request):
     else:
         form = RestockForm()
     return render(request, 'inventory/restock_form.html', {'form': form})
+
+# low stock list
+
+
+@login_required
+def low_stock_list(request):
+    low_stock_list = [item for item in Item.objects.all()
+                      if item.is_low_stock()]
+    return render(request, 'inventory/low_stock_list.html', {'low_stock_list': low_stock_list})

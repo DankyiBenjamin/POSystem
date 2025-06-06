@@ -1,22 +1,36 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html>
   <head>
     <title>Sales System</title>
   </head>
   <body>
+    <a href="{% url 'dashboard' %}">
+      <h1>Sales & Inventory Management System</h1>
+    </a>
     {% if user.is_authenticated %}
     <p>
-      Logged in as {{ user.username }} ({{ user.role }}) |
-      <form action="{% url 'logout' %}" method="post" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" style="background:none; border:none; color:blue; cursor:pointer;">
-          Logout
-        </button>
-      </form>
-      {% if user.role == 'admin' %} |
-      <a href="{% url 'create_user' %}">Create User</a>
-      {% endif %}
+      Welcome, {{ user.username }} ({{ user.role }}) |
+      <a href="{% url 'logout' %}">Logout</a>
     </p>
+
+    <nav>
+      <ul>
+        <li><a href="{% url 'item_list' %}">📦 View Inventory</a></li>
+        <li><a href="{% url 'restock_item' %}">➕ Restock Items</a></li>
+        <li><a href="{% url 'sales:make_sale' %}">🛒 Make Sale</a></li>
+        <li><a href="{% url 'sales:sales_list' %}">📜 View Sales</a></li>
+        <li><a href="{% url 'sales:make_credit' %}">💳 Credit Sale</a></li>
+        <li><a href="{% url 'sales:credit_list' %}">💳 View Credits</a></li>
+        <li><a href="{% url 'low_stock_list' %}">🔻 Low Stock Items</a></li>
+        {% if user.role == 'admin' %}
+        <li><a href="{% url 'create_user' %}">👤 Create New User</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% else %}
+    <p><a href="{% url 'login' %}">Login</a></p>
     {% endif %}
 
     <hr />

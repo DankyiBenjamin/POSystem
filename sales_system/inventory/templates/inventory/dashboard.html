@@ -1,13 +1,12 @@
 {% extends 'base.html' %} {% block content %}
 <h2>Dashboard</h2>
-<p>Welcome, {{ user.username }} ({{ user.role }})!</p>
-
+<h3>System Summary</h3>
 <ul>
-  <li><a href="{% url 'item_list' %}">View Inventory</a></li>
-  <li><a href="{% url 'restock_item' %}">Restock Items</a></li>
-  {% if user.role == 'admin' %}
-  <li><a href="{% url 'create_user' %}">Create New User</a></li>
-  {% endif %}
+  <li>
+    <a href="{% url 'low_stock_list' %}">
+      🔻 Low Stock Items: {{ low_stock_count }}
+    </a>
+  </li>
 </ul>
 
 <!-- We will replace this with stats like:

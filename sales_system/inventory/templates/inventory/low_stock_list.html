@@ -1,0 +1,24 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Low Stock Items</h2>
+{% if items %}
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Qty</th>
+    <th>Total Stock Added</th>
+    <th>Threshold (20%)</th>
+  </tr>
+  {% for item in items %}
+  <tr>
+    <td>{{ item.name }}</td>
+    <td>{{ item.quantity }}</td>
+    <td>{{ item.total_stock_added }}</td>
+    <td>{{ item.total_stock_added|floatformat:0|add:""|add:" * 0.2"|safe }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No items are currently low on stock. ✔️</p>
+{% endif %}
+<a href="{% url 'dashboard' %}">← Back to Dashboard</a>
+{% endblock %}

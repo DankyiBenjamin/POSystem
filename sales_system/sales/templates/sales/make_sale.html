@@ -1,0 +1,15 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Make Sale</h2>
+
+{% if messages %}
+<ul style="color: red">
+  {% for message in messages %}
+  <li>{{ message }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+<form method="post">
+  {% csrf_token %} {{ form.as_p }}
+  <button type="submit">Sell</button>
+</form>
+{% endblock %}

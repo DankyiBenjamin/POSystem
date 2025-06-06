@@ -1,0 +1,21 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Credit Records</h2>
+<table>
+  <tr>
+    <th>Customer</th>
+    <th>Item</th>
+    <th>Qty</th>
+    <th>Paid?</th>
+    <th>Date</th>
+  </tr>
+  {% for c in credits %}
+  <tr>
+    <td>{{ c.customer_name }}</td>
+    <td>{{ c.item.name }}</td>
+    <td>{{ c.quantity }}</td>
+    <td>{{ c.paid }}</td>
+    <td>{{ c.credited_at }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
