@@ -1,6 +1,21 @@
 {% extends 'base.html' %} {% block content %}
 
 <h2>📊 Dashboard</h2>
+{% if user.role == 'admin' %}
+  <form method="get">
+    <label for="shop">Select Shop:</label>
+    <select name="shop" id="shop" onchange="this.form.submit()">
+      <option value="">-- All Shops --</option>
+      {% for shop in available_shops %}
+        <option value="{{ shop.id }}" {% if shop.id == selected_shop.id %}selected{% endif %}>
+          {{ shop.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </form>
+{% else %}
+  <p>🛍️ Shop: {{ selected_shop.name }}</p>
+{% endif %}
 
 <div style="display: flex; flex-wrap: wrap; gap: 20px">
   <div style="border: 1px solid #ccc; padding: 20px; width: 200px">
@@ -27,5 +42,15 @@
     <a href="{% url 'low_stock_list' %}">View Items</a>
   </div>
 </div>
-
-{% endblock %}
+{% if user.role == 'admin' or user.role == "manager" %}
+<h3>📤 Export Data</h3>
+<ul>
+  <li><a href="{% url 'sales:export_sales_csv' %}">Download Sales CSV</a></li>
+  <li>
+    <a href="{% url 'sales:export_credits_csv' %}">Download Credits CSV</a>
+  </li>
+  <li>
+    <a href="{% url 'sales:export_inventory_csv' %}">Download Inventory CSV</a>
+  </li>
+</ul>
+{% endif%} {% endblock %}

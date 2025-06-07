@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        font-family: Arial;
+        font-size: 12px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid black;
+        padding: 5px;
+      }
+      th {
+        background: #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Receipt #{{ sale.id }}</h2>
+    <p><strong>Date:</strong> {{ sale.closed_at }}</p>
+    <p>
+      <strong>Customer:</strong> {{ sale.customer_name }}
+      <!--  -->
+      ({{ sale.customer_phone_number }})
+    </p>
+    <p><strong>Sold by:</strong> {{ sale.closed_by.username }}</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.item.name }}</td>
+          <td>{{ item.quantity_sold }}</td>
+          <td>{{ item.subtotal }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p><strong>Total:</strong> {{ sale.total_sales }}</p>
+  </body>
+</html>

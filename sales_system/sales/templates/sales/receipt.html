@@ -1,0 +1,36 @@
+{% extends 'base.html' %} {% block content %}
+<h2>🧾 Receipt</h2>
+<p><strong>Date:</strong> {{ sale.closed_at }}</p>
+<p>
+  <strong>Customer:</strong> {{ sale.customer_name }} |
+  <!--  -->
+  {{sale.customer_phone_number }}
+</p>
+<p><strong>Sold by:</strong> {{ sale.closed_by.username }}</p>
+
+<table border="1" cellspacing="0" cellpadding="5">
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th>Qty</th>
+      <th>Subtotal</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.item.name }}</td>
+      <td>{{ item.quantity_sold }}</td>
+      <td>{{ item.subtotal }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p><strong>Total:</strong> {{ sale.total_sales }}</p>
+
+<br />
+<a href="{% url 'sales:sale_receipt_pdf' sale.id %}">📥 Download PDF</a> |
+<button onclick="window.print()">🖨️ Print</button> |
+<a href="{% url 'dashboard' %}">⬅ Back to Dashboard</a>
+{% endblock %}

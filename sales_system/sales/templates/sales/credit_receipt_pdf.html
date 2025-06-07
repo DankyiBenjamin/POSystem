@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        font-family: Arial;
+        font-size: 12px;
+      }
+      h2 {
+        margin-bottom: 10px;
+      }
+      p {
+        margin: 4px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Credit Receipt #{{ credit.id }}</h2>
+    <p>
+      <strong>Customer:</strong> {{ credit.customer_name }}
+      ({{credit.customer_phone_number }})
+    </p>
+    <p><strong>Item:</strong> {{ credit.item.name }}</p>
+    <p><strong>Quantity:</strong> {{ credit.quantity }}</p>
+    <p><strong>Paid:</strong> {{ credit.paid }}</p>
+    <p><strong>Credited By:</strong> {{ credit.credited_by }}</p>
+    <p><strong>Date:</strong> {{ credit.credited_at }}</p>
+  </body>
+</html>

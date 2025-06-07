@@ -16,7 +16,9 @@
     <td>{{ item.quantity }}</td>
     <td>GHC {{ item.price }}</td>
     <td>{% if item.is_low_stock %}⚠️ Low{% else %}✅{% endif %}</td>
+    {% if user.role == 'admin' or user.role == "manager" %}
     <td><a href="{% url 'update_item' item.id %}">Edit</a></td>
+    {% endif%}
   </tr>
   {% endfor %}
 </table>

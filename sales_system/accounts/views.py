@@ -36,4 +36,5 @@ def create_user(request):
 """
 Admin Ben password 1234
 manager Yaw Passoword 1234
+staff Ama Password 1234
 """

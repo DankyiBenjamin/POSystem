@@ -20,4 +20,5 @@ class CreditForm(forms.ModelForm):
     # Form for creating a credit
     class Meta:
         model = Credit
-        fields = ['item', 'quantity', 'customer_name', 'customer_phone_number']
+        fields = ['item', 'quantity', 'customer_name',
+                  'customer_phone_number', 'paid']

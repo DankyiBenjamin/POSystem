@@ -1,19 +1,19 @@
 {% extends 'base.html' %} {% block content %}
 <h2>Low Stock Items</h2>
-{% if items %}
+{% if low_stock_list %}
 <table>
   <tr>
     <th>Name</th>
     <th>Qty</th>
     <th>Total Stock Added</th>
-    <th>Threshold (20%)</th>
+    <th>Threshold</th>
   </tr>
-  {% for item in items %}
+  {% for item in low_stock_list %}
   <tr>
     <td>{{ item.name }}</td>
     <td>{{ item.quantity }}</td>
     <td>{{ item.total_stock_added }}</td>
-    <td>{{ item.total_stock_added|floatformat:0|add:""|add:" * 0.2"|safe }}</td>
+    <td>{{ item.low_stock_threshold }}</td>
   </tr>
   {% endfor %}
 </table>

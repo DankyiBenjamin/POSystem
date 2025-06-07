@@ -1,10 +1,36 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from .forms import SaleForm, CreditForm
 from .models import Sale, SaleItem, Credit
 from inventory.models import Item
 from django.db import transaction
+
+# printing reciepts
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from io import BytesIO
+from django.http import FileResponse
+
+# exporting sales and credits to CSV
+import csv
+from django.http import HttpResponse
+
+
+def is_admin(user):
+    return user.is_authenticated and user.role == 'admin'
+
+
+def is_manager(user):
+    return user.is_authenticated and user.role == 'manager'
+
+
+def is_staff(user):
+    return user.is_authenticated and user.role == 'staff'
+
+
+def is_admin_or_manager(user):
+    return user.is_authenticated and user.role in ['admin', 'manager']
 
 
 @login_required
@@ -34,7 +60,8 @@ def make_sale(request):
 
                 messages.success(
                     request, f"Sold {qty} {item.name} for {subtotal}")
-                return redirect('sales:make_sale')
+                return redirect('sales:sale_receipt', sale_id=sale.id)
+
     else:
         form = SaleForm()
     return render(request, 'sales/make_sale.html', {'form': form})
@@ -57,7 +84,7 @@ def make_credit(request):
                 credit.save()
                 messages.success(
                     request, f"{credit.quantity} {item.name} credited to {credit.customer_name}")
-                return redirect('sales:make_credit')
+                return redirect('sales:credit_receipt', credit_id=credit.id)
     else:
         form = CreditForm()
     return render(request, 'sales/make_credit.html', {'form': form})
@@ -73,3 +100,129 @@ def sales_list(request):
 def credit_list(request):
     credits = Credit.objects.all().order_by('-credited_at')
     return render(request, 'sales/credit_list.html', {'credits': credits})
+
+
+@user_passes_test(is_admin_or_manager)
+@login_required
+def export_sales_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="sales.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Date',
+        'Customer Name',
+        'Phone',
+        'Sold By',
+        'Item',
+        'Quantity',
+        'Subtotal',
+        'Total Sale',
+    ])
+
+    for sale in Sale.objects.all():
+        sale_items = sale.saleitem_set.all()
+        for item in sale_items:
+            writer.writerow([
+                sale.closed_at,
+                sale.customer_name,
+                sale.customer_phone_number,
+                sale.closed_by.username,
+                item.item.name,
+                item.quantity_sold,
+                item.subtotal,
+                sale.total_sales  # could be repeated for each row or left blank after first
+            ])
+    return response
+
+
+@user_passes_test(is_admin_or_manager)
+@login_required
+def export_credits_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="credits.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Customer', 'Phone', 'Item', 'Qty', 'Paid?', 'Date'])
+
+    for credit in Credit.objects.all():
+        writer.writerow([
+            credit.customer_name,
+            credit.customer_phone_number,
+            credit.item.name,
+            credit.quantity,
+            'Yes' if credit.paid else 'No',
+            credit.credited_at
+        ])
+    return response
+
+
+@user_passes_test(is_admin_or_manager)
+@login_required
+def export_inventory_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="inventory.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Item Name', 'Quantity', 'Price', 'Low Stock?', 'Shop'])
+
+    for item in Item.objects.all():
+        writer.writerow([
+            item.name,
+            item.quantity,
+            item.price,
+            'Yes' if item.is_low_stock() else 'No',
+            item.shop.name if item.shop else ''
+        ])
+    return response
+
+
+@login_required
+def edit_credit(request, credit_id):
+    credit = get_object_or_404(Credit, pk=credit_id)
+    if request.method == 'POST':
+        form = CreditForm(request.POST, instance=credit)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Credit updated successfully.")
+            return redirect('sales:credit_list')
+    else:
+        form = CreditForm(instance=credit)
+    return render(request, 'sales/edit_credit.html', {'form': form, 'credit': credit})
+
+
+@login_required
+def sale_receipt(request, sale_id):
+    sale = get_object_or_404(Sale, pk=sale_id)
+    sale_items = sale.saleitem_set.all()
+    return render(request, 'sales/receipt.html', {
+        'sale': sale,
+        'items': sale_items
+    })
+
+
+@login_required
+def sale_receipt_pdf(request, sale_id):
+    sale = get_object_or_404(Sale, pk=sale_id)
+    sale_items = sale.saleitem_set.all()
+    template = get_template('sales/receipt_pdf.html')
+    html = template.render({'sale': sale, 'items': sale_items})
+    buffer = BytesIO()
+    pisa.CreatePDF(html, dest=buffer)
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f"receipt_{sale.id}.pdf")
+
+
+@login_required
+def credit_receipt(request, credit_id):
+    credit = get_object_or_404(Credit, pk=credit_id)
+    return render(request, 'sales/credit_receipt.html', {'credit': credit})
+
+
+@login_required
+def credit_receipt_pdf(request, credit_id):
+    credit = get_object_or_404(Credit, pk=credit_id)
+    template = get_template('sales/credit_receipt_pdf.html')
+    html = template.render({'credit': credit})
+    buffer = BytesIO()
+    pisa.CreatePDF(html, dest=buffer)
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f"credit_{credit.id}.pdf")

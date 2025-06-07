@@ -8,14 +8,18 @@
     <th>Paid?</th>
     <th>Date</th>
   </tr>
-  {% for c in credits %}
+  {% for c in credits %} {% if c.paid %} {%else%}
   <tr>
     <td>{{ c.customer_name }}</td>
     <td>{{ c.item.name }}</td>
     <td>{{ c.quantity }}</td>
     <td>{{ c.paid }}</td>
     <td>{{ c.credited_at }}</td>
+    <td>
+      <a href="{% url 'sales:edit_credit' credit_id=c.id %}">Edit</a>|
+      <a href="{% url 'sales:credit_receipt' credit_id=c.id %}">🧾 Receipt</a>
+    </td>
   </tr>
-  {% endfor %}
+  {%endif%} {% endfor %}
 </table>
 {% endblock %}

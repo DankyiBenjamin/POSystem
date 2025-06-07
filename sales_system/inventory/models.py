@@ -12,11 +12,12 @@ class Item(models.Model):
     quantity = models.IntegerField()
     description = models.TextField(blank=True, null=True)
     total_stock_added = models.IntegerField(default=0)
+    low_stock_threshold = models.IntegerField(default=5)
     last_updated = models.DateTimeField(auto_now=True)
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, null=True)
 
     def is_low_stock(self):
-        return self.total_stock_added > 0 and self.quantity < 0.2 * self.total_stock_added
+        return self.quantity <= self.low_stock_threshold
 
     def __str__(self):
         return self.name

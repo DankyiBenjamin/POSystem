@@ -1,0 +1,18 @@
+{% extends 'base.html' %} {% block content %}
+<h2>💳 Credit Receipt</h2>
+
+<p>
+  <strong>Customer:</strong> {{ credit.customer_name }} |
+  <!--  -->
+  {{ credit.customer_phone_number }}
+</p>
+<p><strong>Item:</strong> {{ credit.item.name }}</p>
+<p><strong>Quantity:</strong> {{ credit.quantity }}</p>
+<p><strong>Paid:</strong> {{ credit.paid }}</p>
+<p><strong>Credited By:</strong> {{ credit.credited_by }}</p>
+<p><strong>Date:</strong> {{ credit.credited_at }}</p>
+
+<a href="{% url 'sales:credit_receipt_pdf' credit.id %}">📥 Download PDF</a> |
+<button onclick="window.print()">🖨️ Print</button> |
+<a href="{% url 'sales:credit_list' %}">⬅ Back to Credits</a>
+{% endblock %}

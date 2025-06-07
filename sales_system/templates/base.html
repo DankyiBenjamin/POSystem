@@ -12,19 +12,25 @@
     {% if user.is_authenticated %}
     <p>
       Welcome, {{ user.username }} ({{ user.role }}) |
-      <a href="{% url 'logout' %}">Logout</a>
+      <form action="{% url 'logout' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" style="background:none; border:none; color:blue; cursor:pointer;">
+          Logout
+        </button>
+      </form>
     </p>
 
     <nav>
       <ul>
         <li><a href="{% url 'item_list' %}">📦 View Inventory</a></li>
-        <li><a href="{% url 'restock_item' %}">➕ Restock Items</a></li>
         <li><a href="{% url 'sales:make_sale' %}">🛒 Make Sale</a></li>
         <li><a href="{% url 'sales:sales_list' %}">📜 View Sales</a></li>
         <li><a href="{% url 'sales:make_credit' %}">💳 Credit Sale</a></li>
         <li><a href="{% url 'sales:credit_list' %}">💳 View Credits</a></li>
         <li><a href="{% url 'low_stock_list' %}">🔻 Low Stock Items</a></li>
-        {% if user.role == 'admin' %}
+        {% if user.role == 'admin' or user.role == "manager" %}
+        <li><a href="{% url 'add_item' %}">Add New Items</a></li>
+        <li><a href="{% url 'restock_item' %}">➕ Restock Items</a></li>
         <li><a href="{% url 'create_user' %}">👤 Create New User</a></li>
         {% endif %}
       </ul>

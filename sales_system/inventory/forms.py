@@ -5,7 +5,8 @@ from .models import Item, Restock
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['name', 'price', 'quantity', 'description', 'shop']
+        fields = ['name', 'price', 'quantity',
+                  'description', 'shop', 'low_stock_threshold']
 
 
 class RestockForm(forms.ModelForm):
