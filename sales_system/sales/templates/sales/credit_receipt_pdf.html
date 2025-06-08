@@ -4,27 +4,78 @@
     <meta charset="utf-8" />
     <style>
       body {
-        font-family: Arial;
-        font-size: 12px;
+        font-family: "Arial", sans-serif;
+        font-size: 13px;
+        margin: 40px;
+        color: #333;
       }
-      h2 {
+      .receipt-container {
+        border: 1px solid #ccc;
+        padding: 20px;
+        max-width: 500px;
+      }
+      .header {
+        text-align: center;
+        border-bottom: 2px solid #444;
+        margin-bottom: 20px;
+      }
+      .header h2 {
+        margin: 0;
+        font-size: 20px;
+      }
+      .field {
         margin-bottom: 10px;
       }
-      p {
-        margin: 4px 0;
+      .label {
+        font-weight: bold;
+        display: inline-block;
+        width: 130px;
+      }
+      .paid {
+        color: green;
+        font-weight: bold;
+      }
+      .unpaid {
+        color: red;
+        font-weight: bold;
       }
     </style>
   </head>
   <body>
-    <h2>Credit Receipt #{{ credit.id }}</h2>
-    <p>
-      <strong>Customer:</strong> {{ credit.customer_name }}
-      ({{credit.customer_phone_number }})
-    </p>
-    <p><strong>Item:</strong> {{ credit.item.name }}</p>
-    <p><strong>Quantity:</strong> {{ credit.quantity }}</p>
-    <p><strong>Paid:</strong> {{ credit.paid }}</p>
-    <p><strong>Credited By:</strong> {{ credit.credited_by }}</p>
-    <p><strong>Date:</strong> {{ credit.credited_at }}</p>
+    <div class="receipt-container">
+      <div class="header">
+        <h2>Credit Receipt #{{ credit.id }}</h2>
+        <small>{{ credit.credited_at|date:"Y-m-d H:i" }}</small>
+      </div>
+
+      <div class="field">
+        <span class="label">Customer:</span>
+        {{ credit.customer_name }} ({{ credit.customer_phone_number }})
+      </div>
+
+      <div class="field">
+        <span class="label">Item:</span> {{ credit.item.name }}
+      </div>
+
+      <div class="field">
+        <span class="label">Quantity:</span> {{ credit.quantity }}
+      </div>
+
+      <div class="field">
+        <span class="label">Status:</span>
+        {% if credit.paid %}
+        <span class="paid">PAID</span>
+        {% else %}
+        <span class="unpaid">UNPAID</span>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <span class="label">Credited By:</span>
+        <!--  -->
+        {{ credit.credited_by.username }}
+        <!--  -->
+      </div>
+    </div>
   </body>
 </html>

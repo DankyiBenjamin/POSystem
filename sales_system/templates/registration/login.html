@@ -1,9 +1,59 @@
 {% extends 'base.html' %} {% block content %}
-<h2>Login</h2>
-<form method="post">
-  {% csrf_token %} {{ form.as_p }}
-  <button type="submit">Login</button>
-</form>
-{% if form.errors %}
-<p style="color: red">Invalid credentials. Try again.</p>
-{% endif %} {% endblock %}
+<div
+  class="d-flex justify-content-center align-items-center"
+  style="min-height: 75vh"
+>
+  <div class="card shadow rounded-4" style="width: 400px">
+    <div
+      class="card-header text-white text-center rounded-top-4"
+      style="background: linear-gradient(to right, #4f46e5, #6366f1)"
+    >
+      <h4 class="mb-0 pt-3">
+        <i class="bi bi-box-seam-fill fs-2 d-block"></i>
+        Welcome to <strong>One&Half</strong>
+      </h4>
+      <div class="pb-3"></div>
+    </div>
+
+    <div class="card-body px-4 py-4">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="id_username" class="form-label">Username</label>
+          <input
+            type="text"
+            name="username"
+            class="form-control"
+            id="id_username"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label for="id_password" class="form-label">Password</label>
+          <input
+            type="password"
+            name="password"
+            class="form-control"
+            id="id_password"
+            required
+          />
+        </div>
+        {% if form.errors %}
+        <div class="text-danger small mb-2">
+          Invalid credentials. Please try again.
+        </div>
+        {% endif %}
+        <div class="d-grid">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-box-arrow-in-right"></i> Sign In
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card-footer text-center text-muted small bg-white border-top-0">
+      Need an account? Please contact your system administrator.
+    </div>
+  </div>
+</div>
+{% endblock %}

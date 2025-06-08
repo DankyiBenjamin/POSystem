@@ -1,25 +1,57 @@
 {% extends 'base.html' %} {% block content %}
-<h2>Credit Records</h2>
-<table>
-  <tr>
-    <th>Customer</th>
-    <th>Item</th>
-    <th>Qty</th>
-    <th>Paid?</th>
-    <th>Date</th>
-  </tr>
-  {% for c in credits %} {% if c.paid %} {%else%}
-  <tr>
-    <td>{{ c.customer_name }}</td>
-    <td>{{ c.item.name }}</td>
-    <td>{{ c.quantity }}</td>
-    <td>{{ c.paid }}</td>
-    <td>{{ c.credited_at }}</td>
-    <td>
-      <a href="{% url 'sales:edit_credit' credit_id=c.id %}">Edit</a>|
-      <a href="{% url 'sales:credit_receipt' credit_id=c.id %}">🧾 Receipt</a>
-    </td>
-  </tr>
-  {%endif%} {% endfor %}
-</table>
-{% endblock %}
+
+<h2 class="fw-bold mb-4">
+  <i class="bi bi-credit-card text-warning"></i> Credit Records
+</h2>
+
+{% if credits %}
+<div class="table-responsive">
+  <table class="table table-hover table-striped align-middle shadow-sm">
+    <thead class="table-warning">
+      <tr>
+        <th>Customer</th>
+        <th>Item</th>
+        <th>Qty</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in credits %} {% if not c.paid %}
+      <tr>
+        <td>{{ c.customer_name }}</td>
+        <td>{{ c.item.name }}</td>
+        <td>{{ c.quantity }}</td>
+        <td>
+          {% if c.paid %}
+          <span class="badge bg-success">Paid</span>
+          {% else %}
+          <span class="badge bg-danger">Unpaid</span>
+          {% endif %}
+        </td>
+        <td>{{ c.credited_at|date:"Y-m-d H:i" }}</td>
+        <td>
+          <a
+            href="{% url 'sales:edit_credit' credit_id=c.id %}"
+            class="btn btn-sm btn-outline-primary"
+          >
+            <i class="bi bi-pencil-square"></i> Edit
+          </a>
+          <a
+            href="{% url 'sales:credit_receipt' credit_id=c.id %}"
+            class="btn btn-sm btn-outline-secondary"
+          >
+            <i class="bi bi-receipt"></i> Receipt
+          </a>
+        </td>
+      </tr>
+      {% endif %} {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-success">
+  <i class="bi bi-check-circle-fill"></i> All credits have been paid! ✔️
+</div>
+{% endif %} {% endblock %}

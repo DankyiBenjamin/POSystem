@@ -1,18 +1,54 @@
 {% extends 'base.html' %} {% block content %}
-<h2>💳 Credit Receipt</h2>
 
-<p>
-  <strong>Customer:</strong> {{ credit.customer_name }} |
-  <!--  -->
-  {{ credit.customer_phone_number }}
-</p>
-<p><strong>Item:</strong> {{ credit.item.name }}</p>
-<p><strong>Quantity:</strong> {{ credit.quantity }}</p>
-<p><strong>Paid:</strong> {{ credit.paid }}</p>
-<p><strong>Credited By:</strong> {{ credit.credited_by }}</p>
-<p><strong>Date:</strong> {{ credit.credited_at }}</p>
+<div class="container py-4">
+  <div class="card shadow-sm mx-auto" style="max-width: 600px">
+    <div class="card-header bg-warning text-dark text-center">
+      <h4 class="mb-0">
+        <i class="bi bi-credit-card-2-back-fill"></i> Credit Receipt
+      </h4>
+    </div>
 
-<a href="{% url 'sales:credit_receipt_pdf' credit.id %}">📥 Download PDF</a> |
-<button onclick="window.print()">🖨️ Print</button> |
-<a href="{% url 'sales:credit_list' %}">⬅ Back to Credits</a>
+    <div class="card-body">
+      <p>
+        <strong>Customer:</strong> {{ credit.customer_name }} |
+        <!--  -->
+        {{credit.customer_phone_number }}
+      </p>
+      <p><strong>Item:</strong> {{ credit.item.name }}</p>
+      <p><strong>Quantity:</strong> {{ credit.quantity }}</p>
+      <p>
+        <strong>Status:</strong>
+        {% if credit.paid %}
+        <span class="badge bg-success">PAID</span>
+        {% else %}
+        <span class="badge bg-danger">UNPAID</span>
+        {% endif %}
+      </p>
+      <p><strong>Credited By:</strong> {{ credit.credited_by.username }}</p>
+      <p><strong>Date:</strong> {{ credit.credited_at|date:"Y-m-d H:i" }}</p>
+    </div>
+
+    <div class="card-footer text-center">
+      <a
+        href="{% url 'sales:credit_receipt_pdf' credit.id %}"
+        class="btn btn-outline-primary btn-sm me-2"
+      >
+        <i class="bi bi-file-earmark-arrow-down"></i> Download PDF
+      </a>
+      <button
+        onclick="window.print()"
+        class="btn btn-outline-secondary btn-sm me-2"
+      >
+        <i class="bi bi-printer"></i> Print
+      </button>
+      <a
+        href="{% url 'sales:credit_list' %}"
+        class="btn btn-outline-dark btn-sm"
+      >
+        <i class="bi bi-arrow-left-circle"></i> Back to Credits
+      </a>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

@@ -92,20 +92,49 @@ def make_credit(request):
 
 @login_required
 def sales_list(request):
-    sales = Sale.objects.all().order_by('-closed_at')
+    user = request.user
+
+    if user.role == 'admin':
+        shop_id = request.session.get('selected_shop_id')
+        # get the sales of the specific shop or nothing
+        sales = Sale.objects.filter(
+            shop_id=shop_id) if shop_id else Sale.objects.none()
+    else:
+        sales = Sale.objects.filter(shop=user.shop)
+
     return render(request, 'sales/sales_list.html', {'sales': sales})
 
 
 @login_required
 def credit_list(request):
-    credits = Credit.objects.all().order_by('-credited_at')
+    user = request.user
+
+    if user.role == 'admin':
+        shop_id = request.session.get('selected_shop_id')
+        # get the credits of the specific shop or nothing
+        credits = Credit.objects.filter(
+            shop_id=shop_id) if shop_id else Credit.objects.none()
+    else:
+        credits = Credit.objects.filter(shop=user.shop)
+
     return render(request, 'sales/credit_list.html', {'credits': credits})
 
 
 @user_passes_test(is_admin_or_manager)
 @login_required
 def export_sales_csv(request):
+
+    user = request.user
+    if user.role == 'admin':
+        shop_id = request.session.get('selected_shop_id')
+        # get the sales of the specific shop or nothing
+        sales = Sale.objects.filter(
+            shop_id=shop_id) if shop_id else Sale.objects.none()
+    else:
+        sales = Sale.objects.filter(shop=user.shop)
+
     response = HttpResponse(content_type='text/csv')
+    # set the name to the shop name
     response['Content-Disposition'] = 'attachment; filename="sales.csv"'
 
     writer = csv.writer(response)
@@ -120,7 +149,7 @@ def export_sales_csv(request):
         'Total Sale',
     ])
 
-    for sale in Sale.objects.all():
+    for sale in sales:
         sale_items = sale.saleitem_set.all()
         for item in sale_items:
             writer.writerow([
@@ -144,7 +173,17 @@ def export_credits_csv(request):
     writer = csv.writer(response)
     writer.writerow(['Customer', 'Phone', 'Item', 'Qty', 'Paid?', 'Date'])
 
-    for credit in Credit.objects.all():
+    # getting the user
+    user = request.user
+    if user.role == 'admin':
+        shop_id = request.session.get('selected_shop_id')
+        # get the credits of the specific shop or nothing
+        credits = Credit.objects.filter(
+            shop_id=shop_id) if shop_id else Credit.objects.none()
+    else:
+        credits = Credit.objects.filter(shop=user.shop)
+
+    for credit in credits:
         writer.writerow([
             credit.customer_name,
             credit.customer_phone_number,
@@ -163,8 +202,15 @@ def export_inventory_csv(request):
     response['Content-Disposition'] = 'attachment; filename="inventory.csv"'
     writer = csv.writer(response)
     writer.writerow(['Item Name', 'Quantity', 'Price', 'Low Stock?', 'Shop'])
+    user = request.user
+    if user.role == 'admin':
+        shop_id = request.session.get('selected_shop_id')
+        items = Item.objects.filter(
+            shop_id=shop_id) if shop_id else Item.objects.none()
+    else:
+        items = Item.objects.filter(shop=user.shop)
 
-    for item in Item.objects.all():
+    for item in items:
         writer.writerow([
             item.name,
             item.quantity,

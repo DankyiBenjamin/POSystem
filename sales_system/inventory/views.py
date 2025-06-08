@@ -4,6 +4,7 @@ from .models import Item, Restock, Shop
 from sales.models import Sale, Credit
 from django.utils.timezone import now
 from .forms import ItemForm, RestockForm
+from inventory.utils import get_user_shop_queryset
 
 
 def is_admin(user):
@@ -27,28 +28,23 @@ def dashboard_view(request):
     today = now().date()
     user = request.user
 
-    # Step 1: Admin selects a shop
-    selected_shop_id = request.GET.get('shop')
-    if user.role == 'admin' and selected_shop_id:
-        try:
-            selected_shop = Shop.objects.get(pk=selected_shop_id)
-        except Shop.DoesNotExist:
-            selected_shop = None
-    elif user.role != 'admin':
-        selected_shop = user.shop
+    # Admin selects shop
+    if user.role == 'admin':
+        shop_id = request.GET.get('shop')
+        if shop_id:
+            request.session['selected_shop_id'] = shop_id
+        selected_shop_id = request.session.get('selected_shop_id')
+        selected_shop = get_object_or_404(
+            Shop, id=selected_shop_id) if selected_shop_id else None
     else:
-        selected_shop = None
+        selected_shop = user.shop
+        request.session['selected_shop_id'] = selected_shop.id
 
     # Step 2: Filter data by selected shop (if any)
-    sales_today = Sale.objects.filter(closed_at__date=today)
-    credits = Credit.objects.all()
-    inventory_items = Item.objects.all()
-
-    if selected_shop:
-        sales_today = sales_today.filter(shop=selected_shop)
-        credits = credits.filter(shop=selected_shop)
-        inventory_items = inventory_items.filter(shop=selected_shop)
-
+    sales_today = Sale.objects.filter(
+        closed_at__date=today, shop=selected_shop)
+    credits = Credit.objects.filter(shop=selected_shop)
+    inventory_items = Item.objects.filter(shop=selected_shop)
     low_stock_items = [item for item in inventory_items if item.is_low_stock()]
 
     context = {
@@ -64,7 +60,18 @@ def dashboard_view(request):
 
 @login_required
 def item_list(request):
-    items = Item.objects.all()
+    user = request.user
+
+    # checking if the user is admin
+    if user.role == 'admin':
+        # get the shop id from session
+        shop_id = request.session.get('selected_shop_id')
+        items = Item.objects.filter(
+            shop_id=shop_id) if shop_id else Sale.objects.none()
+
+    else:
+        # for non-admin users, filter items by their shop
+        items = Item.objects.filter(shop=user.shop)
     return render(request, 'inventory/item_list.html', {'items': items})
 
 
@@ -117,6 +124,31 @@ def restock_item(request):
 
 @login_required
 def low_stock_list(request):
-    low_stock_list = [item for item in Item.objects.all()
+    user = request.user
+
+    if user.role == 'admin':
+        shop_id = request.session.get('selected_shop_id')
+        # Get all items for the selected shop or none if no shop is selected
+        items = Item.objects.filter(
+            shop_id=shop_id) if shop_id else Item.objects.none()
+    else:
+        # For non-admin users, filter items by their shop
+        items = Item.objects.filter(shop=user.shop)
+
+    low_stock_list = [item for item in items
                       if item.is_low_stock()]
     return render(request, 'inventory/low_stock_list.html', {'low_stock_list': low_stock_list})
+
+
+# def low_stock_list(request):
+#     # Get shop-filtered items
+
+
+#     # Filter only those that are low stock
+#     low_stock_items = [item for item in items if item.is_low_stock()]
+
+#     return render(request, 'inventory/low_stock_list.html', {'items': low_stock_items})
+
+
+# the low stock shop list is not showing
+# the sales list and credit list are not filtering by shop
