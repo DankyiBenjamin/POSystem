@@ -44,7 +44,7 @@
   <body>
     <div class="receipt-container">
       <div class="header">
-        <h2>Credit Receipt #{{ credit.id }}</h2>
+        <h2 class="text-center">Receipt #: {{ credit.receipt_code }}</h2>
         <small>{{ credit.credited_at|date:"Y-m-d H:i" }}</small>
       </div>
 

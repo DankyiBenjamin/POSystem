@@ -1,36 +1,68 @@
 {% extends 'base.html' %} {% block content %}
-<h2>🧾 Receipt</h2>
-<p><strong>Date:</strong> {{ sale.closed_at }}</p>
-<p>
-  <strong>Customer:</strong> {{ sale.customer_name }} |
-  <!--  -->
-  {{sale.customer_phone_number }}
-</p>
-<p><strong>Sold by:</strong> {{ sale.closed_by.username }}</p>
 
-<table border="1" cellspacing="0" cellpadding="5">
-  <thead>
-    <tr>
-      <th>Item</th>
-      <th>Qty</th>
-      <th>Subtotal</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for item in items %}
-    <tr>
-      <td>{{ item.item.name }}</td>
-      <td>{{ item.quantity_sold }}</td>
-      <td>{{ item.subtotal }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="container py-4">
+  <div class="card shadow-sm mx-auto" style="max-width: 700px">
+    <div class="card-header bg-primary text-white text-center">
+      <h4 class="mb-0"><i class="bi bi-receipt-cutoff"></i> Sales Receipt</h4>
+    </div>
 
-<p><strong>Total:</strong> {{ sale.total_sales }}</p>
+    <div class="card-body">
+      <h6 class="text-center text-muted">Receipt #: {{ sale.receipt_code }}</h6>
 
-<br />
-<a href="{% url 'sales:sale_receipt_pdf' sale.id %}">📥 Download PDF</a> |
-<button onclick="window.print()">🖨️ Print</button> |
-<a href="{% url 'dashboard' %}">⬅ Back to Dashboard</a>
+      <div class="mb-3">
+        <p><strong>Date:</strong> {{ sale.closed_at|date:"Y-m-d H:i" }}</p>
+        <p>
+          <strong>Customer:</strong> {{ sale.customer_name }}
+          <!--  -->
+          ({{sale.customer_phone_number }})
+        </p>
+        <p><strong>Sold by:</strong> {{ sale.closed_by.username }}</p>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td>{{ item.item.name }}</td>
+              <td>{{ item.quantity_sold }}</td>
+              <td>GHC {{ item.subtotal }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-end mt-3">
+        <h5><strong>Total:</strong> GHC {{ sale.total_sales }}</h5>
+      </div>
+    </div>
+
+    <div class="card-footer text-center">
+      <a
+        href="{% url 'sales:sale_receipt_pdf' sale.id %}"
+        class="btn btn-outline-primary btn-sm me-2"
+      >
+        <i class="bi bi-download"></i> Download PDF
+      </a>
+      <button
+        onclick="window.print()"
+        class="btn btn-outline-secondary btn-sm me-2"
+      >
+        <i class="bi bi-printer"></i> Print
+      </button>
+      <a href="{% url 'dashboard' %}" class="btn btn-outline-dark btn-sm">
+        <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+      </a>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

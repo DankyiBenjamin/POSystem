@@ -1,9 +1,40 @@
 {% extends 'base.html' %} {% block content %}
-<h2>Create New User</h2>
-<form method="post">
-  {% csrf_token %} {{ form.as_p }}
-  <button type="submit">Create User</button>
-</form>
-{% if messages %} {% for message in messages %}
-<p style="color: green">{{ message }}</p>
-{% endfor %} {% endif %} {% endblock %}
+
+<div
+  class="d-flex justify-content-center align-items-center"
+  style="min-height: 75vh"
+>
+  <div class="card shadow rounded-4" style="width: 500px">
+    <div class="card-header bg-dark text-white text-center rounded-top-4">
+      <h4 class="mb-0 py-2">
+        <i class="bi bi-person-plus-fill"></i> Create New User
+      </h4>
+    </div>
+
+    <div class="card-body">
+      {% if messages %} {% for message in messages %}
+      <div class="alert alert-success small">{{ message }}</div>
+      {% endfor %} {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %} {% for field in form %}
+        <div class="mb-3">
+          <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+            {{ field.label }}
+          </label>
+          {{ field }} {% if field.errors %}
+          <div class="text-danger small">{{ field.errors|striptags }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+        <div class="d-grid">
+          <button type="submit" class="btn btn-dark">
+            <i class="bi bi-person-check-fill"></i> Create User
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

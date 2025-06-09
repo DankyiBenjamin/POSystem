@@ -2,10 +2,12 @@
 from django.db import models
 from django.conf import settings
 from inventory.models import Item, Shop
+from django.utils import timezone
 
 User = settings.AUTH_USER_MODEL
 
 
+# what the shop purchases as supplies
 class Purchase(models.Model):
     item = models.ForeignKey(
         Item, on_delete=models.CASCADE, related_name='purchases')
@@ -31,6 +33,16 @@ class Credit(models.Model):
     credited_at = models.DateTimeField(auto_now_add=True)
     paid = models.BooleanField(default=False)
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, null=True)
+    receipt_code = models.CharField(
+        max_length=100, unique=True, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.receipt_code and self.shop:
+            year = timezone.now().year
+            shop_id = self.shop.id
+            count = Credit.objects.filter(shop=self.shop).count() + 1
+            self.receipt_code = f"CR-SHOP{shop_id}-{year}-{count:04d}"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.quantity} credited to {self.customer_name}"
@@ -48,6 +60,16 @@ class Sale(models.Model):
     customer_phone_number = models.CharField(
         max_length=20, null=True, blank=True)
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, null=True)
+    receipt_code = models.CharField(
+        max_length=100, unique=True, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.receipt_code and self.shop:
+            year = timezone.now().year
+            shop_id = self.shop.id
+            count = Sale.objects.filter(shop=self.shop).count() + 1
+            self.receipt_code = f"SL-SHOP{shop_id}-{year}-{count:04d}"
+        super().save(*args, **kwargs)
 
 
 def __str__(self):

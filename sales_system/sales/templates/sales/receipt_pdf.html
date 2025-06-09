@@ -4,52 +4,85 @@
     <meta charset="utf-8" />
     <style>
       body {
-        font-family: Arial;
+        font-family: Arial, sans-serif;
         font-size: 12px;
+        margin: 40px;
+        color: #333;
+      }
+      .receipt-box {
+        max-width: 600px;
+        padding: 20px;
+        border: 1px solid #ccc;
+      }
+      h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 20px;
+        border-bottom: 2px solid #444;
+        padding-bottom: 5px;
+      }
+      .meta {
+        margin-bottom: 10px;
+      }
+      .meta p {
+        margin: 3px 0;
       }
       table {
         width: 100%;
         border-collapse: collapse;
+        margin-top: 10px;
       }
       th,
       td {
-        border: 1px solid black;
-        padding: 5px;
+        border: 1px solid #333;
+        padding: 6px 8px;
+        text-align: left;
       }
       th {
-        background: #eee;
+        background: #f0f0f0;
+      }
+      .total {
+        text-align: right;
+        font-weight: bold;
+        padding-top: 10px;
+        font-size: 14px;
       }
     </style>
   </head>
   <body>
-    <h2>Receipt #{{ sale.id }}</h2>
-    <p><strong>Date:</strong> {{ sale.closed_at }}</p>
-    <p>
-      <strong>Customer:</strong> {{ sale.customer_name }}
-      <!--  -->
-      ({{ sale.customer_phone_number }})
-    </p>
-    <p><strong>Sold by:</strong> {{ sale.closed_by.username }}</p>
+    <div class="receipt-box">
+      <h2>Sales Receipt #{{ sale.receipt_code }}</h2>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th>Qty</th>
-          <th>Subtotal</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in items %}
-        <tr>
-          <td>{{ item.item.name }}</td>
-          <td>{{ item.quantity_sold }}</td>
-          <td>{{ item.subtotal }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+      <div class="meta">
+        <p><strong>Date:</strong> {{ sale.closed_at|date:"Y-m-d H:i" }}</p>
+        <p>
+          <strong>Customer:</strong> {{ sale.customer_name }}
+          <!--  -->
+          ({{ sale.customer_phone_number }})
+        </p>
+        <p><strong>Sold by:</strong> {{ sale.closed_by.username }}</p>
+      </div>
 
-    <p><strong>Total:</strong> {{ sale.total_sales }}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.item.name }}</td>
+            <td>{{ item.quantity_sold }}</td>
+            <td>GHC {{ item.subtotal }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <p class="total">Total: GHC {{ sale.total_sales }}</p>
+    </div>
   </body>
 </html>

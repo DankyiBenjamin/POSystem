@@ -20,7 +20,9 @@ from accounts.views import CustomLoginView
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', include('admin_honeypot.urls', namespace='admin_honeypot')),
+    # Unique paths for admin
+    path('pos/', admin.site.urls),
     path('accounts/login/', CustomLoginView.as_view(), name='login'),
     path('accounts/logout/',
          auth_views.LogoutView.as_view(next_page="/"), name='logout'),

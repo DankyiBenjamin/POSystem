@@ -12,6 +12,15 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+from environ import Env
+import dj_database_url
+
+
+# Initialize environment variables
+env = Env()
+Env.read_env()  # Read .env file if it exists
+
+ENVIRONMENT = env('ENVIRONMENT', default='development')
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,12 +29,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-tpe70g6-y3ppj2es3o5b&vfjo3kc^j1i+6#@-uq#)r%s&hv7o1'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if ENVIRONMENT == 'development':
 
-ALLOWED_HOSTS = []
+    DEBUG = True
+else:
+
+    DEBUG = False
+
+# urls
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'oneandhalf.up.railway.app']
+
+CSRF_TRUSTED_ORIGINS = ['https://oneandhalf.up.railway.app']
 
 
 # Application definition
@@ -37,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'admin_honeypot',  # Honeypot for admin interface
 
 
     # Local apps
@@ -85,7 +103,9 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
+POSTGRES_LOCALLY = False
+if ENVIRONMENT == 'production' or POSTGRES_LOCALLY == True:
+    DATABASES['default'] = dj_database_url.parse(env('DATABASE_URL'))
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -133,3 +153,26 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 # Login and logout redirect URLs
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# username blacklist
+ACCOUNT_USERNAME_BLACKLIST = [
+    'admin',
+    'administrator',
+    'root',
+    'superuser',
+    'user',
+    'guest',
+    'test',
+    'demo',
+    'POS',
+    'pos',
+    'sales',
+    'inventory',
+    'accounts',
+    'system',
+    'settings',
+    'config',
+    'configuration']
+
+
+# using django-admin honeypot to protect admin interface

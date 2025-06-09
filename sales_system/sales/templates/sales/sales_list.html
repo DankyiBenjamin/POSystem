@@ -1,21 +1,53 @@
 {% extends 'base.html' %} {% block content %}
-<h2>Sales History</h2>
-<table>
-  <tr>
-    <th>Date</th>
-    <th>User</th>
-    <th>Customer</th>
-    <th>Customer Number</th>
-    <th>Total</th>
-  </tr>
-  {% for sale in sales %}
-  <tr>
-    <td>{{ sale.closed_at }}</td>
-    <td>{{ sale.closed_by }}</td>
-    <td>{{ sale.customer_name }}</td>
-    <td>{{ sale.customer_phone_number }}</td>
-    <td>{{ sale.total_sales }}</td>
-  </tr>
-  {% endfor %}
-</table>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold"><i class="bi bi-clock-history"></i> Sales History</h2>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-hover table-striped align-middle shadow-sm">
+    <thead class="table-primary">
+      <tr>
+        <th>Date</th>
+        <th>Sold By</th>
+        <th>Customer</th>
+        <th>Phone</th>
+        <th>Total</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sale in sales %}
+      <tr>
+        <td>{{ sale.closed_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ sale.closed_by.username }}</td>
+        <td>{{ sale.customer_name }}</td>
+        <td>{{ sale.customer_phone_number }}</td>
+        <td>GHC {{ sale.total_sales }}</td>
+        <td>
+          <a
+            href="{% url 'sales:sale_receipt' sale.id %}"
+            class="btn btn-sm btn-outline-primary me-1"
+          >
+            <i class="bi bi-eye-fill"></i> View
+          </a>
+          <a
+            href="{% url 'sales:sale_receipt_pdf' sale.id %}"
+            class="btn btn-sm btn-outline-secondary"
+          >
+            <i class="bi bi-download"></i> PDF
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center text-muted">
+          No sales recorded yet.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
 {% endblock %}
