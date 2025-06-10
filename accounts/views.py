@@ -38,6 +38,7 @@ Admin Ben password 1234
 manager Yaw Passoword 1234
 staff Ama Password 1234
 staff Harry Password 1234
+Staff Kwame Password 1234
 """
 # staff should not be able to add or restock items
 # download based on the active selected shop
