@@ -37,43 +37,54 @@ def is_admin_or_manager(user):
 @transaction.atomic
 def make_sale(request):
     if request.method == 'POST':
-        form = SaleForm(request.POST)
+        form = SaleForm(request.POST, request=request)
         if form.is_valid():
-            item = form.cleaned_data['item']
+            item = form.cleaned_data['item_name']
             qty = form.cleaned_data['quantity']
             name = form.cleaned_data['customer_name']
             phone = form.cleaned_data['customer_phone_number']
 
             if item.quantity < qty:
                 messages.error(request, "Not enough stock.")
-                print(
-                    f"Not enough stock for {item.name}. Requested: {qty}, Available: {item.quantity}")
+                print(f"❌ Not enough stock for {item.name}. Requested: {qty}, Available: {item.quantity}")
             else:
                 subtotal = item.price * qty
+
                 sale = Sale.objects.create(
-                    closed_by=request.user, total_sales=subtotal, shop=item.shop, customer_name=name, customer_phone_number=phone)
+                    closed_by=request.user,
+                    total_sales=subtotal,
+                    shop=item.shop,
+                    customer_name=name,
+                    customer_phone_number=phone
+                )
+
                 SaleItem.objects.create(
-                    sale=sale, item=item, quantity_sold=qty, subtotal=subtotal)
+                    sale=sale,
+                    item=item,
+                    quantity_sold=qty,
+                    subtotal=subtotal
+                )
 
                 item.quantity -= qty
                 item.save()
 
                 messages.success(
-                    request, f"Sold {qty} {item.name} for {subtotal}")
+                    request, f"✅ Sold {qty} {item.name} for GHC {subtotal:.2f}")
                 return redirect('sales:sale_receipt', sale_id=sale.id)
-
     else:
-        form = SaleForm()
+        form = SaleForm(request=request)
+
     return render(request, 'sales/make_sale.html', {'form': form})
 
 
 @login_required
 def make_credit(request):
     if request.method == 'POST':
-        form = CreditForm(request.POST)
+        form = CreditForm(request.POST, request=request)
         if form.is_valid():
             credit = form.save(commit=False)
             item = credit.item
+
             if item.quantity < credit.quantity:
                 messages.error(request, "Not enough stock for credit.")
             else:
@@ -83,12 +94,14 @@ def make_credit(request):
                 item.save()
                 credit.save()
                 messages.success(
-                    request, f"{credit.quantity} {item.name} credited to {credit.customer_name}")
+                    request,
+                    f"{credit.quantity} {item.name} credited to {credit.customer_name}"
+                )
                 return redirect('sales:credit_receipt', credit_id=credit.id)
     else:
-        form = CreditForm()
-    return render(request, 'sales/make_credit.html', {'form': form})
+        form = CreditForm(request=request)
 
+    return render(request, 'sales/make_credit.html', {'form': form})
 
 @login_required
 def sales_list(request):
@@ -97,10 +110,10 @@ def sales_list(request):
     if user.role == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # get the sales of the specific shop or nothing
-        sales = Sale.objects.filter(
-            shop_id=shop_id) if shop_id else Sale.objects.none()
+        sales = Sale.objects.filter(shop_id=shop_id).order_by('-closed_at') if shop_id else Sale.objects.none()
+
     else:
-        sales = Sale.objects.filter(shop=user.shop)
+        sales = Sale.objects.filter(shop=user.shop).order_by('-closed_at')
 
     return render(request, 'sales/sales_list.html', {'sales': sales})
 
@@ -108,17 +121,28 @@ def sales_list(request):
 @login_required
 def credit_list(request):
     user = request.user
+    show_unpaid = request.GET.get("unpaid") == "1"
 
     if user.role == 'admin':
         shop_id = request.session.get('selected_shop_id')
-        # get the credits of the specific shop or nothing
-        credits = Credit.objects.filter(
-            shop_id=shop_id) if shop_id else Credit.objects.none()
+        credits_qs = Credit.objects.filter(shop_id=shop_id).order_by('-credited_at') if shop_id else Credit.objects.none()
     else:
-        credits = Credit.objects.filter(shop=user.shop)
+        credits_qs = Credit.objects.filter(shop=user.shop).order_by('-credited_at')
 
-    return render(request, 'sales/credit_list.html', {'credits': credits})
+    # Count summaries
+    total_paid = credits_qs.filter(paid=True).count()
+    total_unpaid = credits_qs.filter(paid=False).count()
 
+    # Apply filter toggle
+    if show_unpaid:
+        credits_qs = credits_qs.filter(paid=False)
+
+    return render(request, 'sales/credit_list.html', {
+        'credits': credits_qs,
+        'show_unpaid': show_unpaid,
+        'total_paid': total_paid,
+        'total_unpaid': total_unpaid
+    })
 
 @user_passes_test(is_admin_or_manager)
 @login_required

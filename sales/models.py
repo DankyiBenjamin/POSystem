@@ -23,29 +23,35 @@ class Purchase(models.Model):
         return f"{self.quantity} of {self.item.name}"
 
 
+
 class Credit(models.Model):
-    item = models.ForeignKey(
-        Item, on_delete=models.CASCADE, related_name='credits')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='credits')
     quantity = models.IntegerField()
     customer_name = models.CharField(max_length=255)
     customer_phone_number = models.CharField(max_length=15)
     credited_by = models.ForeignKey(User, on_delete=models.CASCADE)
     credited_at = models.DateTimeField(auto_now_add=True)
     paid = models.BooleanField(default=False)
+    paid_at = models.DateTimeField(null=True, blank=True)  # 👈 Add this
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, null=True)
-    receipt_code = models.CharField(
-        max_length=100, unique=True, blank=True, null=True)
+    receipt_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
 
     def save(self, *args, **kwargs):
+        # Auto-generate receipt code
         if not self.receipt_code and self.shop:
             year = timezone.now().year
-            shop_id = self.shop.id
             count = Credit.objects.filter(shop=self.shop).count() + 1
-            self.receipt_code = f"CR-SHOP{shop_id}-{year}-{count:04d}"
+            self.receipt_code = f"CR-SHOP{self.shop.id}-{year}-{count:04d}"
+
+        # Auto-set paid_at when marking as paid
+        if self.paid and self.paid_at is None:
+            self.paid_at = timezone.now()
+
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.quantity} credited to {self.customer_name}"
+
 
 
 class Sale(models.Model):

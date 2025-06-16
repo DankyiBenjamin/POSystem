@@ -42,3 +42,9 @@ Staff Kwame Password 1234
 """
 # staff should not be able to add or restock items
 # download based on the active selected shop
+# search for inventory items
+# search for sales history or filter by date, name or customer
+# do same for credit history
+# check on the credit being added to total daily sales
+# add part number but only visible to admin on inventory page
+# dont clear the credit after payment make it green

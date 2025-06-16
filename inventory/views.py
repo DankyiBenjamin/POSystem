@@ -24,39 +24,46 @@ def is_admin_or_manager(user):
 
 
 @login_required
+
 def dashboard_view(request):
     today = now().date()
     user = request.user
 
-    # Admin selects shop
+    # Determine selected shop
     if user.role == 'admin':
         shop_id = request.GET.get('shop')
         if shop_id:
             request.session['selected_shop_id'] = shop_id
         selected_shop_id = request.session.get('selected_shop_id')
-        selected_shop = get_object_or_404(
-            Shop, id=selected_shop_id) if selected_shop_id else None
+        selected_shop = get_object_or_404(Shop, id=selected_shop_id) if selected_shop_id else None
     else:
         selected_shop = user.shop
         request.session['selected_shop_id'] = selected_shop.id
 
-    # Step 2: Filter data by selected shop (if any)
-    sales_today = Sale.objects.filter(
-        closed_at__date=today, shop=selected_shop)
+    # Filter objects by selected shop
+    sales_today = Sale.objects.filter(closed_at__date=today, shop=selected_shop)
     credits = Credit.objects.filter(shop=selected_shop)
+    paid_credits_today = credits.filter(paid=True, paid_at__date=today)
     inventory_items = Item.objects.filter(shop=selected_shop)
+
+    # Identify low stock items
     low_stock_items = [item for item in inventory_items if item.is_low_stock()]
+
+    # Compute totals
+    direct_sales_total = sum(s.total_sales for s in sales_today)
+    paid_credit_total = sum(c.item.price * c.quantity for c in paid_credits_today)
+    total_sales_today = direct_sales_total + paid_credit_total
 
     context = {
         'selected_shop': selected_shop,
         'available_shops': Shop.objects.all() if user.role == 'admin' else [],
-        'total_sales_today': sum(s.total_sales for s in sales_today),
+        'total_sales_today': total_sales_today,
         'total_credits': credits.filter(paid=False).count(),
         'total_inventory_items': inventory_items.count(),
         'low_stock_count': len(low_stock_items),
     }
-    return render(request, 'inventory/dashboard.html', context)
 
+    return render(request, 'inventory/dashboard.html', context)
 
 @login_required
 def item_list(request):
@@ -105,18 +112,23 @@ def update_item(request, pk):
 @login_required
 def restock_item(request):
     if request.method == 'POST':
-        form = RestockForm(request.POST)
+        form = RestockForm(request.POST, request=request)
         if form.is_valid():
             restock = form.save(commit=False)
             restock.added_by = request.user
+
             item = restock.item
             item.quantity += restock.quantity_added
             item.total_stock_added += restock.quantity_added
             item.save()
+
+            restock.shop = item.shop
             restock.save()
+
             return redirect('item_list')
     else:
-        form = RestockForm()
+        form = RestockForm(request=request)
+
     return render(request, 'inventory/restock_form.html', {'form': form})
 
 # low stock list

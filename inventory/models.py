@@ -11,6 +11,7 @@ class Item(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.IntegerField()
     description = models.TextField(blank=True, null=True)
+    part_number = models.CharField(max_length=100, unique=True, blank=True, null=True)
     total_stock_added = models.IntegerField(default=0)
     low_stock_threshold = models.IntegerField(default=5)
     last_updated = models.DateTimeField(auto_now=True)

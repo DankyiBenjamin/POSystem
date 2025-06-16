@@ -1,12 +1,37 @@
 {% extends 'base.html' %} {% block content %}
 
-<h2 class="fw-bold mb-4">
+<h2 class="fw-bold mb-3">
   <i class="bi bi-credit-card text-warning"></i> Credit Records
 </h2>
 
+<!-- 🔄 Filter + Summary Row -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <span class="badge bg-success me-2">Paid: {{ total_paid }}</span>
+    <span class="badge bg-danger">Unpaid: {{ total_unpaid }}</span>
+  </div>
+  <div>
+    {% if show_unpaid %}
+    <a
+      href="{% url 'sales:credit_list' %}"
+      class="btn btn-sm btn-outline-primary"
+    >
+      Show All
+    </a>
+    {% else %}
+    <a
+      href="{% url 'sales:credit_list' %}?unpaid=1"
+      class="btn btn-sm btn-outline-danger"
+    >
+      Show Only Unpaid
+    </a>
+    {% endif %}
+  </div>
+</div>
+
 {% if credits %}
 <div class="table-responsive">
-  <table class="table table-hover table-striped align-middle shadow-sm">
+  <table class="table table-hover align-middle shadow-sm">
     <thead class="table-warning">
       <tr>
         <th>Customer</th>
@@ -18,8 +43,8 @@
       </tr>
     </thead>
     <tbody>
-      {% for c in credits %} {% if not c.paid %}
-      <tr>
+      {% for c in credits %}
+      <tr class="{% if not c.paid %}table-danger{% endif %}">
         <td>{{ c.customer_name }}</td>
         <td>{{ c.item.name }}</td>
         <td>{{ c.quantity }}</td>
@@ -32,12 +57,14 @@
         </td>
         <td>{{ c.credited_at|date:"Y-m-d H:i" }}</td>
         <td>
+          {% if not c.paid %}
           <a
             href="{% url 'sales:edit_credit' credit_id=c.id %}"
             class="btn btn-sm btn-outline-primary"
           >
             <i class="bi bi-pencil-square"></i> Edit
           </a>
+          {% endif %}
           <a
             href="{% url 'sales:credit_receipt' credit_id=c.id %}"
             class="btn btn-sm btn-outline-secondary"
@@ -46,12 +73,12 @@
           </a>
         </td>
       </tr>
-      {% endif %} {% endfor %}
+      {% endfor %}
     </tbody>
   </table>
 </div>
 {% else %}
-<div class="alert alert-success">
-  <i class="bi bi-check-circle-fill"></i> All credits have been paid! ✔️
+<div class="alert alert-info">
+  <i class="bi bi-info-circle"></i> No credit records found.
 </div>
 {% endif %} {% endblock %}

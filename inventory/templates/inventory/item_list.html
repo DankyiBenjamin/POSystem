@@ -4,7 +4,7 @@
   <h2 class="fw-bold">
     <i class="bi bi-box-seam-fill text-primary"></i> Inventory
   </h2>
-
+  {% if user.role == 'admin' %}
   <div class="d-flex gap-2">
     <a href="{% url 'add_item' %}" class="btn btn-primary btn-sm">
       <i class="bi bi-plus-circle"></i> Add Item
@@ -13,6 +13,7 @@
       <i class="bi bi-arrow-repeat"></i> Restock
     </a>
   </div>
+  {% endif %}
 </div>
 
 <div class="table-responsive">
@@ -22,6 +23,9 @@
         <th>Name</th>
         <th>Qty</th>
         <th>Price</th>
+        {% if user.role == 'admin' %}
+        <th>Part Number</th>
+        {% endif %}
         <th>Status</th>
         {% if user.role == 'admin' or user.role == "manager" %}
         <th>Actions</th>
@@ -34,6 +38,9 @@
         <td>{{ item.name }}</td>
         <td>{{ item.quantity }}</td>
         <td>GHC {{ item.price }}</td>
+        {% if user.role == 'admin' %}
+        <td>{{ item.part_number }}</td>
+        {% endif %}
         <td>
           {% if item.is_low_stock %}
           <span class="badge bg-danger"
