@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from .forms import SaleForm, CreditForm
+from .forms import SaleForm, CreditForm , EditCreditForm
 from .models import Sale, SaleItem, Credit
 from inventory.models import Item
 from django.db import transaction
@@ -249,13 +249,13 @@ def export_inventory_csv(request):
 def edit_credit(request, credit_id):
     credit = get_object_or_404(Credit, pk=credit_id)
     if request.method == 'POST':
-        form = CreditForm(request.POST, instance=credit)
+        form = EditCreditForm(request.POST, instance=credit)
         if form.is_valid():
             form.save()
             messages.success(request, "Credit updated successfully.")
             return redirect('sales:credit_list')
     else:
-        form = CreditForm(instance=credit)
+        form = EditCreditForm(instance=credit)
     return render(request, 'sales/edit_credit.html', {'form': form, 'credit': credit})
 
 

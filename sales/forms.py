@@ -76,3 +76,16 @@ class CreditForm(forms.ModelForm):
         if commit:
             obj.save()
         return obj
+    
+
+class EditCreditForm(forms.ModelForm):
+    # item = forms.CharField(label="Item", max_length=255, required=True)
+    class Meta:
+        model = Credit
+        fields = [
+            'item',
+            'quantity',
+            'customer_name',
+            'customer_phone_number',
+            'paid',
+        ]
