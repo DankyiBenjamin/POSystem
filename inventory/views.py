@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import Item, Restock, Shop
 from sales.models import Sale, Credit
+from django.db.models import Q
 from django.utils.timezone import now
 from .forms import ItemForm, RestockForm
 from inventory.utils import get_user_shop_queryset
@@ -65,21 +66,35 @@ def dashboard_view(request):
 
     return render(request, 'inventory/dashboard.html', context)
 
+
+# list of items in the inventory
 @login_required
 def item_list(request):
     user = request.user
+    # Get search query from request
+    search_query = request.GET.get('q', '')
 
-    # checking if the user is admin
+    # Determine shop
     if user.role == 'admin':
-        # get the shop id from session
         shop_id = request.session.get('selected_shop_id')
-        items = Item.objects.filter(
-            shop_id=shop_id) if shop_id else Sale.objects.none()
-
+        # Get all items for the selected shop or none if no shop is selected
+        base_qs = Item.objects.filter(shop_id=shop_id) if shop_id else Item.objects.none()
     else:
-        # for non-admin users, filter items by their shop
-        items = Item.objects.filter(shop=user.shop)
-    return render(request, 'inventory/item_list.html', {'items': items})
+        base_qs = Item.objects.filter(shop=user.shop)
+
+    # Apply search filter
+    if search_query:
+        items = base_qs.filter(
+            Q(name__icontains=search_query) | Q(part_number__icontains=search_query)
+        )
+    else:
+        items = base_qs
+
+    return render(request, 'inventory/item_list.html', {
+        'items': items,
+        'search_query': search_query
+    })
+
 
 
 @user_passes_test(is_admin_or_manager)

@@ -38,7 +38,8 @@
         <th>Item</th>
         <th>Qty</th>
         <th>Status</th>
-        <th>Date</th>
+        <th>Credit Date</th>
+        <th>Paid Date</th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -56,6 +57,8 @@
           {% endif %}
         </td>
         <td>{{ c.credited_at|date:"Y-m-d H:i" }}</td>
+        <!-- added paid column -->
+        <td>{{ c.paid_at|date:"Y-m-d H:i" }}</td>
         <td>
           {% if not c.paid %}
           <a

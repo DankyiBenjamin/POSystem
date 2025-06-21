@@ -4,16 +4,30 @@
   <h2 class="fw-bold">
     <i class="bi bi-box-seam-fill text-primary"></i> Inventory
   </h2>
-  {% if user.role == 'admin' %}
+
   <div class="d-flex gap-2">
+    <form method="get" class="d-flex" role="search">
+      <input
+        type="search"
+        name="q"
+        class="form-control form-control-sm me-2"
+        placeholder="Search items..."
+        value="{{ search_query }}"
+      />
+      <button type="submit" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-search"></i>
+      </button>
+    </form>
+
+    {% if user.role == 'admin' %}
     <a href="{% url 'add_item' %}" class="btn btn-primary btn-sm">
       <i class="bi bi-plus-circle"></i> Add Item
     </a>
     <a href="{% url 'restock_item' %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-arrow-repeat"></i> Restock
     </a>
+    {% endif %}
   </div>
-  {% endif %}
 </div>
 
 <div class="table-responsive">
@@ -43,13 +57,13 @@
         {% endif %}
         <td>
           {% if item.is_low_stock %}
-          <span class="badge bg-danger"
-            ><i class="bi bi-exclamation-triangle-fill"></i> Low</span
-          >
+          <span class="badge bg-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i> Low
+          </span>
           {% else %}
-          <span class="badge bg-success"
-            ><i class="bi bi-check-circle-fill"></i> OK</span
-          >
+          <span class="badge bg-success">
+            <i class="bi bi-check-circle-fill"></i> OK
+          </span>
           {% endif %}
         </td>
         {% if user.role == 'admin' or user.role == "manager" %}
@@ -62,6 +76,10 @@
           </a>
         </td>
         {% endif %}
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center text-muted">No items found.</td>
       </tr>
       {% endfor %}
     </tbody>
