@@ -1,11 +1,13 @@
 {% extends 'base.html' %} {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="fw-bold">
+<div
+  class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4"
+>
+  <h2 class="fw-bold mb-0">
     <i class="bi bi-box-seam-fill text-primary"></i> Inventory
   </h2>
 
-  <div class="d-flex gap-2">
+  <div class="d-flex flex-wrap gap-2">
     <form method="get" class="d-flex" role="search">
       <input
         type="search"
@@ -79,7 +81,9 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="6" class="text-center text-muted">No items found.</td>
+        <td colspan="6" class="text-center text-muted">
+          <i class="bi bi-info-circle"></i> No items found.
+        </td>
       </tr>
       {% endfor %}
     </tbody>

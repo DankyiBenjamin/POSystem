@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
+from django.utils.timezone import now
 from .forms import SaleForm, CreditForm , EditCreditForm
 from .models import Sale, SaleItem, Credit
 from inventory.models import Item
@@ -115,7 +116,9 @@ def sales_list(request):
     else:
         sales = Sale.objects.filter(shop=user.shop).order_by('-closed_at')
 
-    return render(request, 'sales/sales_list.html', {'sales': sales})
+    today = now().date()
+
+    return render(request, 'sales/sales_list.html', {'sales': sales , 'today': today})
 
 
 @login_required
@@ -132,6 +135,7 @@ def credit_list(request):
     # Count summaries
     total_paid = credits_qs.filter(paid=True).count()
     total_unpaid = credits_qs.filter(paid=False).count()
+    today = now().date()
 
     # Apply filter toggle
     if show_unpaid:
@@ -141,7 +145,8 @@ def credit_list(request):
         'credits': credits_qs,
         'show_unpaid': show_unpaid,
         'total_paid': total_paid,
-        'total_unpaid': total_unpaid
+        'total_unpaid': total_unpaid,
+        'today': today
     })
 
 @user_passes_test(is_admin_or_manager)
@@ -296,3 +301,45 @@ def credit_receipt_pdf(request, credit_id):
     pisa.CreatePDF(html, dest=buffer)
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f"credit_{credit.id}.pdf")
+
+
+# cancelling a sale or credit
+@user_passes_test(is_admin)
+@transaction.atomic
+def cancel_sale(request, sale_id):
+    sale = get_object_or_404(Sale, id=sale_id)
+
+    if sale.closed_at.date() != now().date():
+        messages.error(request, "❌ You can only cancel sales made today.")
+        return redirect('sales:sales_list')
+
+    for item_line in sale.saleitem_set.all():
+        item = item_line.item
+        item.quantity += item_line.quantity_sold
+        item.save()
+
+    sale.delete()
+    messages.success(request, f"✅ Sale #{sale.receipt_code} has been canceled.")
+    today = now().date()
+    return redirect('sales:sales_list' )
+
+
+@user_passes_test(is_admin)
+@transaction.atomic
+def cancel_credit(request, credit_id):
+    credit = get_object_or_404(Credit, id=credit_id)
+
+    if credit.credited_at.date() != now().date():
+        messages.error(request, "❌ You can only cancel credits made today.")
+        return redirect('sales:credit_list')
+
+    if credit.paid:
+        messages.error(request, "❌ Cannot cancel a paid credit.")
+        return redirect('sales:credit_list')
+
+    credit.item.quantity += credit.quantity
+    credit.item.save()
+    credit.delete()
+    messages.success(request, f"✅ Credit to {credit.customer_name} has been canceled.")
+    today = now().date()
+    return redirect('sales:credit_list' )

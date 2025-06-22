@@ -28,5 +28,9 @@ urlpatterns = [
     path('credits/receipt/<int:credit_id>/pdf/',
          views.credit_receipt_pdf, name='credit_receipt_pdf'),
 
+     # cancel sales urls
+     path('cancel-sale/<int:sale_id>/', views.cancel_sale, name='cancel_sale'),
+     # cancel credit urls
+     path('cancel-credit/<int:credit_id>/', views.cancel_credit, name='cancel_credit'),
 
 ]
