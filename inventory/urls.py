@@ -12,3 +12,4 @@ urlpatterns = [
 
 
 ]
+# work on the search for restock
