@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
 from .models import Item, Restock, Shop
 from sales.models import Sale, Credit
 from django.db.models import Q
@@ -167,6 +168,15 @@ def low_stock_list(request):
     return render(request, 'inventory/low_stock_list.html', {'low_stock_list': low_stock_list})
 
 
+@login_required
+@user_passes_test(is_admin)
+def delete_item(request, item_id):
+    item = get_object_or_404(Item, pk=item_id)
+    if request.method == 'POST':
+        item.delete()
+        messages.success(request, f"✅ '{item.name}' has been deleted from inventory.")
+    messages.error(request, f"❌ Failed to delete '{item.name}'.")
+    return redirect('item_list')
 # def low_stock_list(request):
 #     # Get shop-filtered items
 
