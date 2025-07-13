@@ -3,6 +3,7 @@ from django.db import models
 from django.conf import settings
 from inventory.models import Item, Shop
 from django.utils import timezone
+from django.db import transaction
 
 User = settings.AUTH_USER_MODEL
 
@@ -23,6 +24,15 @@ class Purchase(models.Model):
         return f"{self.quantity} of {self.item.name}"
 
 
+# # This model is used to track the sequence of receipts for sales and credits
+# It ensures that each sale and credit has a unique receipt code.
+class ReceiptSequence(models.Model):
+    shop = models.OneToOneField(Shop, on_delete=models.CASCADE)
+    last_sale_number = models.PositiveIntegerField(default=0)
+    last_credit_number = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"ReceiptSeqence for {self.shop.name}"
 
 class Credit(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='credits')
@@ -39,9 +49,14 @@ class Credit(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate receipt code
         if not self.receipt_code and self.shop:
-            year = timezone.now().year
-            count = Credit.objects.filter(shop=self.shop).count() + 1
-            self.receipt_code = f"CR-SHOP{self.shop.id}-{year}-{count:04d}"
+            with transaction.atomic():
+                sequence, _ = ReceiptSequence.objects.select_for_update().get_or_create(shop=self.shop)
+                sequence.last_credit_number += 1
+                sequence.save()
+
+                year = timezone.now().year
+                self.receipt_code = f"CR-SHOP{self.shop.id}-{year}-{sequence.last_credit_number:04d}"
+
 
         # Auto-set paid_at when marking as paid
         if self.paid and self.paid_at is None:
@@ -71,10 +86,13 @@ class Sale(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.receipt_code and self.shop:
-            year = timezone.now().year
-            shop_id = self.shop.id
-            count = Sale.objects.filter(shop=self.shop).count() + 1
-            self.receipt_code = f"SL-SHOP{shop_id}-{year}-{count:04d}"
+            with transaction.atomic():
+                sequence, _ = ReceiptSequence.objects.select_for_update().get_or_create(shop=self.shop)
+                sequence.last_sale_number += 1
+                sequence.save()
+
+                year = timezone.now().year
+                self.receipt_code = f"SL-SHOP{self.shop.id}-{year}-{sequence.last_sale_number:04d}"
         super().save(*args, **kwargs)
 
 
@@ -100,3 +118,7 @@ class Log(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.action}"
+
+
+# before pushing to production, make sure to run migrations to the production database
+# change the database settings in settings.py to point to the production database
