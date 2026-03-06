@@ -33,4 +33,11 @@ urlpatterns = [
      # cancel credit urls
      path('cancel-credit/<int:credit_id>/', views.cancel_credit, name='cancel_credit'),
 
+     # return URLs
+     path('return/<int:sale_id>/', views.make_return, name='make_return'),
+     path('return/receipt/<int:return_id>/', views.return_receipt, name='return_receipt'),
+     path('return/receipt/<int:return_id>/pdf/', views.return_receipt_pdf, name='return_receipt_pdf'),
+     path('returns/', views.return_list, name='return_list'),
+     path('return/refund/<int:return_id>/', views.process_refund, name='process_refund'),
+
 ]

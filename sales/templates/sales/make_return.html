@@ -1,0 +1,80 @@
+{% extends 'base.html' %} {% block content %}
+
+<div class="container py-4">
+  <div class="card shadow-sm mx-auto" style="max-width: 600px">
+    <div class="card-header bg-warning text-dark text-center">
+      <h4 class="mb-0"><i class="bi bi-arrow-return-left"></i> Process Return</h4>
+    </div>
+
+    <div class="card-body">
+      <h6 class="text-muted mb-3">From Sale: {{ sale.receipt_code }}</h6>
+      <p><strong>Customer:</strong> {{ sale.customer_name }} ({{ sale.customer_phone_number }})</p>
+      <p><strong>Date:</strong> {{ sale.closed_at|date:"Y-m-d H:i" }}</p>
+
+      <hr>
+
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}
+          {{ error }}
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+          <label class="form-label">Select Item to Return</label>
+          {{ form.item }}
+          {% if form.item.errors %}
+          <div class="text-danger small">{{ form.item.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Quantity to Return</label>
+          {{ form.quantity_returned }}
+          {% if form.quantity_returned.errors %}
+          <div class="text-danger small">{{ form.quantity_returned.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Reason for Return</label>
+          {{ form.reason }}
+          {% if form.reason.errors %}
+          <div class="text-danger small">{{ form.reason.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Refund Amount (GHC)</label>
+          {{ form.refund_amount }}
+          {% if form.refund_amount.errors %}
+          <div class="text-danger small">{{ form.refund_amount.errors }}</div>
+          {% endif %}
+          <small class="text-muted">Leave as 0 if no refund</small>
+        </div>
+
+        <div class="mb-3 form-check">
+          {{ form.refunded }}
+          <label class="form-check-label" for="{{ form.refunded.id_for_label }}">
+            Mark as Refunded
+          </label>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-check-circle"></i> Process Return
+          </button>
+          <a href="{% url 'sales:sale_receipt' sale.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left-circle"></i> Back to Receipt
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

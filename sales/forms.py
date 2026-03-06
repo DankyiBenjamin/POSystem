@@ -1,5 +1,6 @@
 from django import forms
-from .models import Credit
+from django.db import models
+from .models import Credit, Return
 from inventory.models import Item
 from django.contrib.auth import get_user_model
 
@@ -89,3 +90,45 @@ class EditCreditForm(forms.ModelForm):
             'customer_phone_number',
             'paid',
         ]
+
+
+class ReturnForm(forms.ModelForm):
+    """Form for processing product returns"""
+    class Meta:
+        model = Return
+        fields = ['item', 'quantity_returned', 'reason', 'refund_amount', 'refunded']
+
+    def __init__(self, *args, **kwargs):
+        self.sale = kwargs.pop('sale', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.sale:
+            # Only show items from this sale
+            sale_items = self.sale.saleitem_set.all()
+            item_ids = [si.item.id for si in sale_items]
+            self.fields['item'].queryset = Item.objects.filter(id__in=item_ids)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        item = cleaned_data.get('item')
+        quantity = cleaned_data.get('quantity_returned')
+        
+        if item and quantity:
+            # Check how many of this item were sold in this sale
+            sale_item = self.sale.saleitem_set.filter(item=item).first()
+            if sale_item:
+                # Check how many have already been returned
+                already_returned = self.sale.returns.filter(item=item).aggregate(
+                    total=models.Sum('quantity_returned')
+                )['total'] or 0
+                
+                max_returnable = sale_item.quantity_sold - already_returned
+                
+                if quantity > max_returnable:
+                    raise forms.ValidationError(
+                        f"You can only return up to {max_returnable} of '{item.name}'. "
+                        f"You bought {sale_item.quantity_sold} in this sale, "
+                        f"and {already_returned} has already been returned."
+                    )
+        
+        return cleaned_data

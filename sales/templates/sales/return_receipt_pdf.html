@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Return Receipt - {{ return_obj.receipt_code }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .info { margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    .total { text-align: right; font-size: 18px; font-weight: bold; }
+    .badge { padding: 5px 10px; border-radius: 3px; }
+    .badge-success { background-color: #28a745; color: white; }
+    .badge-warning { background-color: #ffc107; color: black; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>One & Half - Return Receipt</h2>
+    <p>Return #: {{ return_obj.receipt_code }}</p>
+  </div>
+
+  <div class="info">
+    <p><strong>Date:</strong> {{ return_obj.returned_at|date:"Y-m-d H:i" }}</p>
+    <p><strong>Original Sale:</strong> {{ return_obj.sale.receipt_code }}</p>
+    <p><strong>Customer:</strong> {{ return_obj.sale.customer_name }} ({{ return_obj.sale.customer_phone_number }})</p>
+    <p><strong>Processed by:</strong> {{ return_obj.returned_by.username }}</p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Quantity Returned</th>
+        <th>Refund Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ return_obj.item.name }}</td>
+        <td>{{ return_obj.quantity_returned }}</td>
+        <td>GHC {{ return_obj.refund_amount }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  {% if return_obj.reason %}
+  <div class="info">
+    <p><strong>Reason:</strong> {{ return_obj.reason }}</p>
+  </div>
+  {% endif %}
+
+  <div class="total">
+    {% if return_obj.refunded %}
+    <span class="badge badge-success">REFUNDED</span>
+    {% else %}
+    <span class="badge badge-warning">PENDING REFUND</span>
+    {% endif %}
+  </div>
+</body>
+</html>

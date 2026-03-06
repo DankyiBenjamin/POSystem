@@ -94,6 +94,11 @@
               >
             </li>
             <li class="nav-item">
+              <a class="nav-link" href="{% url 'sales:return_list' %}">
+                <i class="bi bi-arrow-return-left"></i> Returns</a
+              >
+            </li>
+            <li class="nav-item">
               <a class="nav-link" href="{% url 'low_stock_list' %}">
                 <i class="bi bi-exclamation-triangle-fill text-danger"></i> Low
                 Stock</a
@@ -155,6 +160,15 @@
     {% endif %}
 
     <div class="container mt-3">
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endfor %}
+      {% endif %}
+
       {% if selected_shop %}
       <div class="alert alert-light border shadow-sm">
         <i class="bi bi-shop"></i> Viewing shop:
