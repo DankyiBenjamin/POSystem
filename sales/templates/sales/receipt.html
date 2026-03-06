@@ -61,12 +61,16 @@
       >
         <i class="bi bi-printer"></i> Print
       </button>
+      {% if not return_obj.refunded %}
+      {% if user.role|lower == 'admin' or user.role|lower == 'manager' %}
       <a
         href="{% url 'sales:make_return' sale.id %}"
         class="btn btn-outline-warning btn-sm me-2"
       >
         <i class="bi bi-arrow-return-left"></i> Return
       </a>
+      {% endif %}
+      {% endif %}
       <a href="{% url 'dashboard' %}" class="btn btn-outline-dark btn-sm">
         <i class="bi bi-arrow-left-circle"></i> Back
       </a>

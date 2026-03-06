@@ -19,19 +19,19 @@ from django.http import HttpResponse
 
 
 def is_admin(user):
-    return user.is_authenticated and user.role == 'admin'
+    return user.is_authenticated and (user.role or '').lower() == 'admin'
 
 
 def is_manager(user):
-    return user.is_authenticated and user.role == 'manager'
+    return user.is_authenticated and (user.role or '').lower() == 'manager'
 
 
 def is_staff(user):
-    return user.is_authenticated and user.role == 'staff'
+    return user.is_authenticated and (user.role or '').lower() == 'staff'
 
 
 def is_admin_or_manager(user):
-    return user.is_authenticated and user.role in ['admin', 'manager']
+    return user.is_authenticated and (user.role or '').lower() in ['admin', 'manager']
 
 
 @login_required
@@ -108,7 +108,7 @@ def make_credit(request):
 def sales_list(request):
     user = request.user
 
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # get the sales of the specific shop or nothing
         sales = Sale.objects.filter(shop_id=shop_id).order_by('-closed_at') if shop_id else Sale.objects.none()
@@ -126,7 +126,7 @@ def credit_list(request):
     user = request.user
     show_unpaid = request.GET.get("unpaid") == "1"
 
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         credits_qs = Credit.objects.filter(shop_id=shop_id).order_by('-credited_at') if shop_id else Credit.objects.none()
     else:
@@ -154,7 +154,7 @@ def credit_list(request):
 def export_sales_csv(request):
 
     user = request.user
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # get the sales of the specific shop or nothing
         sales = Sale.objects.filter(
@@ -204,7 +204,7 @@ def export_credits_csv(request):
 
     # getting the user
     user = request.user
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # get the credits of the specific shop or nothing
         credits = Credit.objects.filter(
@@ -232,7 +232,7 @@ def export_inventory_csv(request):
     writer = csv.writer(response)
     writer.writerow(['Item Name', 'Quantity', 'Price', 'Low Stock?', 'Shop'])
     user = request.user
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         items = Item.objects.filter(
             shop_id=shop_id) if shop_id else Item.objects.none()
@@ -384,7 +384,7 @@ def make_return(request, sale_id):
     
     # Get user's shop
     user = request.user
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
     else:
         shop_id = user.shop.id if user.shop else None
@@ -443,7 +443,7 @@ def return_list(request):
     """List all returns"""
     user = request.user
     
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         returns = Return.objects.filter(shop_id=shop_id).order_by('-returned_at') if shop_id else Return.objects.none()
     else:

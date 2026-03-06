@@ -14,7 +14,7 @@ class CustomLoginView(LoginView):
 
 
 def is_admin(user):
-    return user.is_authenticated and user.role == 'admin'
+    return user.is_authenticated and (user.role or '').lower() == 'admin'
 
 
 @login_required

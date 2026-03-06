@@ -15,8 +15,8 @@ class Shop(models.Model):
 class CustomUser(AbstractUser):
     Role_CHOICES = (
         ('admin', 'Admin'),
-        ('Manager', 'Manager'),
-        ('Staff', 'Staff'),
+        ('manager', 'Manager'),
+        ('staff', 'Staff'),
     )
 
     role = models.CharField(

@@ -79,7 +79,7 @@
           >
             <i class="bi bi-receipt"></i> Receipt
           </a>
-          {% if user.role == 'admin' and not c.paid and c.credited_at.date == today %}
+          {% if user.role|lower == 'admin' and not c.paid and c.credited_at.date == today %}
           <a
             href="{% url 'sales:cancel_credit' credit_id=c.id %}"
             class="btn btn-sm btn-danger"

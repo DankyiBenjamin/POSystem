@@ -10,19 +10,19 @@ from inventory.utils import get_user_shop_queryset
 
 
 def is_admin(user):
-    return user.is_authenticated and user.role == 'admin'
+    return user.is_authenticated and (user.role or '').lower() == 'admin'
 
 
 def is_manager(user):
-    return user.is_authenticated and user.role == 'manager'
+    return user.is_authenticated and (user.role or '').lower() == 'manager'
 
 
 def is_staff(user):
-    return user.is_authenticated and user.role == 'staff'
+    return user.is_authenticated and (user.role or '').lower() == 'staff'
 
 
 def is_admin_or_manager(user):
-    return user.is_authenticated and user.role in ['admin', 'manager']
+    return user.is_authenticated and (user.role or '').lower() in ['admin', 'manager']
 
 
 @login_required
@@ -32,7 +32,7 @@ def dashboard_view(request):
     user = request.user
 
     # Determine selected shop
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.GET.get('shop')
         if shop_id:
             request.session['selected_shop_id'] = shop_id
@@ -71,7 +71,7 @@ def dashboard_view(request):
 
     context = {
         'selected_shop': selected_shop,
-        'available_shops': Shop.objects.all() if user.role == 'admin' else [],
+        'available_shops': Shop.objects.all() if (user.role or '').lower() == 'admin' else [],
         'total_sales_today': total_sales_today,
         'total_refunds_today': total_refunds_today,
         'net_cash_today': net_cash_today,
@@ -91,7 +91,7 @@ def item_list(request):
     search_query = request.GET.get('q', '')
 
     # Determine shop
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # Get all items for the selected shop or none if no shop is selected
         base_qs = Item.objects.filter(shop_id=shop_id) if shop_id else Item.objects.none()
@@ -169,7 +169,7 @@ def restock_item(request):
 def low_stock_list(request):
     user = request.user
 
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # Get all items for the selected shop or none if no shop is selected
         items = Item.objects.filter(

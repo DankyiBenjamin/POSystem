@@ -22,7 +22,7 @@ class SaleForm(forms.Form):
         self.items_qs = Item.objects.none()
         if request:
             user = request.user
-            if user.role == 'admin':
+            if (user.role or '').lower() == 'admin':
                 selected_shop_id = request.session.get('selected_shop_id')
                 if selected_shop_id:
                     self.items_qs = Item.objects.filter(shop_id=selected_shop_id)
@@ -55,7 +55,7 @@ class CreditForm(forms.ModelForm):
 
         if self.request:
             user = self.request.user
-            shop = user.shop if user.role != 'admin' else self.request.session.get('selected_shop_id')
+            shop = user.shop if (user.role or '').lower() != 'admin' else self.request.session.get('selected_shop_id')
             if shop:
                 self.items_qs = Item.objects.filter(shop_id=shop)
                 # prepare datalist options

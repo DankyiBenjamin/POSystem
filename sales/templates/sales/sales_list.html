@@ -42,7 +42,7 @@
           >
             <i class="bi bi-download"></i> PDF
           </a>
-          {% if user.role == 'admin' and sale.closed_at.date == today %}
+          {% if user.role|lower == 'admin' and sale.closed_at.date == today %}
           <a
             href="{% url 'sales:cancel_sale' sale.id %}"
             class="btn btn-sm btn-danger"

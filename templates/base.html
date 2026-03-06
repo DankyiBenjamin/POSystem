@@ -104,7 +104,7 @@
                 Stock</a
               >
             </li>
-            {% if user.role == 'admin' or user.role == 'manager' %}
+            {% if user.role|lower == 'admin' or user.role|lower == 'manager' %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'restock_item' %}">
                 <i class="bi bi-cart-plus-fill"></i> Restock Items</a
@@ -143,7 +143,7 @@
               </ul>
             </li>
 
-            {% if user.role == 'admin' %}
+            {% if user.role|lower == 'admin' %}
             <li class="nav-item ms-2 mt-2 mt-lg-0">
               <a
                 class="btn btn-outline-primary btn-sm"
