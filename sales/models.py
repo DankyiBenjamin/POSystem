@@ -95,6 +95,21 @@ class Sale(models.Model):
                 self.receipt_code = f"SL-SHOP{self.shop.id}-{year}-{sequence.last_sale_number:04d}"
         super().save(*args, **kwargs)
 
+    @property
+    def total_returns(self):
+        """Calculate total refund amount for this sale"""
+        return sum(r.refund_amount for r in self.returns.filter(refunded=True))
+
+    @property
+    def net_sales(self):
+        """Calculate net sales after returns"""
+        return self.total_sales - self.total_returns
+
+    @property
+    def has_returns(self):
+        """Check if this sale has any returns"""
+        return self.returns.exists()
+
 
 def __str__(self):
     return f"Sale closed by {self.closed_by} on {self.closed_at}"
@@ -120,5 +135,34 @@ class Log(models.Model):
         return f"{self.user} - {self.action}"
 
 
-# before pushing to production, make sure to run migrations to the production database
-# change the database settings in settings.py to point to the production database
+
+class Return(models.Model):
+    """Model for tracking product returns"""
+    sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='returns')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='returns')
+    quantity_returned = models.IntegerField()
+    reason = models.TextField(blank=True, null=True)
+    refund_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    refunded = models.BooleanField(default=False)
+    refunded_at = models.DateTimeField(null=True, blank=True)
+    returned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    returned_at = models.DateTimeField(auto_now_add=True)
+    shop = models.ForeignKey(Shop, on_delete=models.CASCADE, null=True)
+    receipt_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        # Auto-generate return receipt code
+        if not self.receipt_code and self.shop:
+            year = timezone.now().year
+            count = Return.objects.filter(shop=self.shop).count() + 1
+            self.receipt_code = f"RT-SHOP{self.shop.id}-{year}-{count:04d}"
+        
+        # Auto-set refunded_at when marking as refunded
+        if self.refunded and self.refunded_at is None:
+            self.refunded_at = timezone.now()
+        
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.quantity_returned} of {self.item.name} returned from Sale {self.sale.receipt_code}"
+

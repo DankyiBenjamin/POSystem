@@ -23,7 +23,12 @@
         <td>{{ sale.closed_by.username }}</td>
         <td>{{ sale.customer_name }}</td>
         <td>{{ sale.customer_phone_number }}</td>
-        <td>GHC {{ sale.total_sales }}</td>
+        <td>
+          GHC {{ sale.total_sales }}
+          {% if sale.has_returns %}
+          <br><small class="text-danger">(Returned: GHC {{ sale.total_returns }})</small>
+          {% endif %}
+        </td>
         <td class="d-flex flex-wrap gap-1">
           <a
             href="{% url 'sales:sale_receipt' sale.id %}"
@@ -37,7 +42,7 @@
           >
             <i class="bi bi-download"></i> PDF
           </a>
-          {% if user.role == 'admin' and sale.closed_at.date == today %}
+          {% if user.role|lower == 'admin' and sale.closed_at.date == today %}
           <a
             href="{% url 'sales:cancel_sale' sale.id %}"
             class="btn btn-sm btn-danger"

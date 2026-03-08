@@ -94,12 +94,17 @@
               >
             </li>
             <li class="nav-item">
+              <a class="nav-link" href="{% url 'sales:return_list' %}">
+                <i class="bi bi-arrow-return-left"></i> Returns</a
+              >
+            </li>
+            <li class="nav-item">
               <a class="nav-link" href="{% url 'low_stock_list' %}">
                 <i class="bi bi-exclamation-triangle-fill text-danger"></i> Low
                 Stock</a
               >
             </li>
-            {% if user.role == 'admin' or user.role == 'manager' %}
+            {% if user.role|lower == 'admin' or user.role|lower == 'manager' %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'restock_item' %}">
                 <i class="bi bi-cart-plus-fill"></i> Restock Items</a
@@ -138,7 +143,7 @@
               </ul>
             </li>
 
-            {% if user.role == 'admin' %}
+            {% if user.role|lower == 'admin' %}
             <li class="nav-item ms-2 mt-2 mt-lg-0">
               <a
                 class="btn btn-outline-primary btn-sm"
@@ -155,6 +160,15 @@
     {% endif %}
 
     <div class="container mt-3">
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endfor %}
+      {% endif %}
+
       {% if selected_shop %}
       <div class="alert alert-light border shadow-sm">
         <i class="bi bi-shop"></i> Viewing shop:

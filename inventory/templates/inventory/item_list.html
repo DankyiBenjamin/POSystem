@@ -21,7 +21,7 @@
       </button>
     </form>
 
-    {% if user.role == 'admin' %}
+    {% if user.role|lower == 'admin' %}
     <a href="{% url 'add_item' %}" class="btn btn-primary btn-sm">
       <i class="bi bi-plus-circle"></i> Add Item
     </a>
@@ -39,11 +39,11 @@
         <th>Name</th>
         <th>Qty</th>
         <th>Price</th>
-        {% if user.role == 'admin' %}
+        {% if user.role|lower == 'admin' %}
         <th>Part Number</th>
         {% endif %}
         <th>Status</th>
-        {% if user.role == 'admin' or user.role == "manager" %}
+        {% if user.role|lower == 'admin' or user.role|lower == "manager" %}
         <th>Actions</th>
         {% endif %}
       </tr>
@@ -54,7 +54,7 @@
         <td>{{ item.name }}</td>
         <td>{{ item.quantity }}</td>
         <td>GHC {{ item.price }}</td>
-        {% if user.role == 'admin' %}
+        {% if user.role|lower == 'admin' %}
         <td>{{ item.part_number }}</td>
         {% endif %}
         <td>
@@ -68,7 +68,7 @@
           </span>
           {% endif %}
         </td>
-        {% if user.role == 'admin' or user.role == "manager" %}
+        {% if user.role|lower == 'admin' or user.role|lower == "manager" %}
         <td>
           <a
             href="{% url 'update_item' item.id %}"
@@ -77,7 +77,7 @@
             <i class="bi bi-pencil-square"></i> Edit
           </a>
 
-          {% if user.role == 'admin' %}
+          {% if user.role|lower == 'admin' %}
           <form action="{% url 'delete_item' item.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this item?');">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm btn-outline-danger">

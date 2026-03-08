@@ -1,0 +1,70 @@
+{% extends 'base.html' %} {% block content %}
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-arrow-return-left"></i> Returns</h2>
+  </div>
+
+  {% if returns %}
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Return #</th>
+              <th>Date</th>
+              <th>Original Sale</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Refund</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for return_obj in returns %}
+            <tr>
+              <td>{{ return_obj.receipt_code }}</td>
+              <td>{{ return_obj.returned_at|date:"Y-m-d" }}</td>
+              <td>{{ return_obj.sale.receipt_code }}</td>
+              <td>{{ return_obj.item.name }}</td>
+              <td>{{ return_obj.quantity_returned }}</td>
+              <td>GHC {{ return_obj.refund_amount }}</td>
+              <td>
+                {% if return_obj.refunded %}
+                <span class="badge bg-success">Refunded</span>
+                {% else %}
+                <span class="badge bg-warning">Pending</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'sales:return_receipt' return_obj.id %}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-receipt"></i> View
+                </a>
+                {% if not return_obj.refunded %}
+                  {% if user.role|lower == 'admin' or user.role|lower == 'manager' %}
+                  <form method="post" action="{% url 'sales:process_refund' return_obj.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Process refund of GHC {{ return_obj.refund_amount }}? This will reduce the sale total.')">
+                      <i class="bi bi-cash"></i> Refund
+                    </button>
+                  </form>
+                  {% endif %}
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No returns found.
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

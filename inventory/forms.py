@@ -20,7 +20,7 @@ class RestockForm(forms.ModelForm):
 
         if request:
             user = request.user
-            shop = user.shop if user.role != 'admin' else request.session.get('selected_shop_id')
+            shop = user.shop if (user.role or '').lower() != 'admin' else request.session.get('selected_shop_id')
             if shop:
                 self.fields['item'].queryset = Item.objects.filter(shop_id=shop)
             else:

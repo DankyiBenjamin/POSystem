@@ -2,10 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils.timezone import now
-from .forms import SaleForm, CreditForm , EditCreditForm
-from .models import Sale, SaleItem, Credit
+from .forms import SaleForm, CreditForm , EditCreditForm, ReturnForm
+from .models import Sale, SaleItem, Credit, Return
 from inventory.models import Item
-from django.db import transaction
+from django.db import models, transaction
 
 # printing reciepts
 from django.template.loader import get_template
@@ -19,19 +19,19 @@ from django.http import HttpResponse
 
 
 def is_admin(user):
-    return user.is_authenticated and user.role == 'admin'
+    return user.is_authenticated and (user.role or '').lower() == 'admin'
 
 
 def is_manager(user):
-    return user.is_authenticated and user.role == 'manager'
+    return user.is_authenticated and (user.role or '').lower() == 'manager'
 
 
 def is_staff(user):
-    return user.is_authenticated and user.role == 'staff'
+    return user.is_authenticated and (user.role or '').lower() == 'staff'
 
 
 def is_admin_or_manager(user):
-    return user.is_authenticated and user.role in ['admin', 'manager']
+    return user.is_authenticated and (user.role or '').lower() in ['admin', 'manager']
 
 
 @login_required
@@ -108,7 +108,7 @@ def make_credit(request):
 def sales_list(request):
     user = request.user
 
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # get the sales of the specific shop or nothing
         sales = Sale.objects.filter(shop_id=shop_id).order_by('-closed_at') if shop_id else Sale.objects.none()
@@ -126,7 +126,7 @@ def credit_list(request):
     user = request.user
     show_unpaid = request.GET.get("unpaid") == "1"
 
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         credits_qs = Credit.objects.filter(shop_id=shop_id).order_by('-credited_at') if shop_id else Credit.objects.none()
     else:
@@ -154,7 +154,7 @@ def credit_list(request):
 def export_sales_csv(request):
 
     user = request.user
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # get the sales of the specific shop or nothing
         sales = Sale.objects.filter(
@@ -204,7 +204,7 @@ def export_credits_csv(request):
 
     # getting the user
     user = request.user
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # get the credits of the specific shop or nothing
         credits = Credit.objects.filter(
@@ -232,7 +232,7 @@ def export_inventory_csv(request):
     writer = csv.writer(response)
     writer.writerow(['Item Name', 'Quantity', 'Price', 'Low Stock?', 'Shop'])
     user = request.user
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         items = Item.objects.filter(
             shop_id=shop_id) if shop_id else Item.objects.none()
@@ -313,14 +313,43 @@ def cancel_sale(request, sale_id):
         messages.error(request, "❌ You can only cancel sales made today.")
         return redirect('sales:sales_list')
 
-    for item_line in sale.saleitem_set.all():
-        item = item_line.item
-        item.quantity += item_line.quantity_sold
-        item.save()
+    # Check if this sale has any returns
+    has_returns = sale.returns.exists()
+    total_refunds = 0
+    
+    if has_returns:
+        # Calculate total refunds that need to be reversed
+        total_refunds = sale.total_returns
+        
+        # For each sale item, only add back what wasn't returned
+        for item_line in sale.saleitem_set.all():
+            item = item_line.item
+            quantity_sold = item_line.quantity_sold
+            
+            # Get quantity returned for this specific item
+            item_returns = sale.returns.filter(item=item).aggregate(
+                total=models.Sum('quantity_returned')
+            )['total'] or 0
+            
+            # Only add back what wasn't returned
+            quantity_to_add = quantity_sold - item_returns
+            if quantity_to_add > 0:
+                item.quantity += quantity_to_add
+                item.save()
+        
+        # Delete the returns (they're tied to the sale being canceled)
+        sale.returns.all().delete()
+        
+        messages.warning(request, f"⚠️ Sale had returns. GHC {total_refunds} in refunds will be reversed. Stock adjusted for non-returned items only.")
+    else:
+        # No returns - normal cancel behavior
+        for item_line in sale.saleitem_set.all():
+            item = item_line.item
+            item.quantity += item_line.quantity_sold
+            item.save()
 
     sale.delete()
     messages.success(request, f"✅ Sale #{sale.receipt_code} has been canceled.")
-    today = now().date()
     return redirect('sales:sales_list' )
 
 
@@ -343,3 +372,105 @@ def cancel_credit(request, credit_id):
     messages.success(request, f"✅ Credit to {credit.customer_name} has been canceled.")
     today = now().date()
     return redirect('sales:credit_list' )
+
+
+# ==================== PRODUCT RETURNS ====================
+
+@login_required
+@transaction.atomic
+def make_return(request, sale_id):
+    """Process a product return for a sale"""
+    sale = get_object_or_404(Sale, pk=sale_id)
+    
+    # Get user's shop
+    user = request.user
+    if (user.role or '').lower() == 'admin':
+        shop_id = request.session.get('selected_shop_id')
+    else:
+        shop_id = user.shop.id if user.shop else None
+    
+    if request.method == 'POST':
+        form = ReturnForm(request.POST, sale=sale)
+        if form.is_valid():
+            return_obj = form.save(commit=False)
+            return_obj.sale = sale
+            return_obj.returned_by = request.user
+            return_obj.shop = sale.shop
+            
+            # Restock the item
+            item = return_obj.item
+            item.quantity += return_obj.quantity_returned
+            item.save()
+            
+            return_obj.save()
+            
+            messages.success(
+                request, 
+                f"✅ Returned {return_obj.quantity_returned} {item.name}. "
+                f"Item has been restocked."
+            )
+            return redirect('sales:return_receipt', return_id=return_obj.id)
+    else:
+        form = ReturnForm(sale=sale)
+    
+    return render(request, 'sales/make_return.html', {
+        'form': form, 
+        'sale': sale
+    })
+
+
+@login_required
+def return_receipt(request, return_id):
+    """Display return receipt"""
+    return_obj = get_object_or_404(Return, pk=return_id)
+    return render(request, 'sales/return_receipt.html', {'return_obj': return_obj})
+
+
+@login_required
+def return_receipt_pdf(request, return_id):
+    """Generate PDF for return receipt"""
+    return_obj = get_object_or_404(Return, pk=return_id)
+    template = get_template('sales/return_receipt_pdf.html')
+    html = template.render({'return_obj': return_obj})
+    buffer = BytesIO()
+    pisa.CreatePDF(html, dest=buffer)
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f"return_{return_obj.id}.pdf")
+
+
+@login_required
+def return_list(request):
+    """List all returns"""
+    user = request.user
+    
+    if (user.role or '').lower() == 'admin':
+        shop_id = request.session.get('selected_shop_id')
+        returns = Return.objects.filter(shop_id=shop_id).order_by('-returned_at') if shop_id else Return.objects.none()
+    else:
+        returns = Return.objects.filter(shop=user.shop).order_by('-returned_at')
+    
+    return render(request, 'sales/return_list.html', {'returns': returns})
+
+
+@user_passes_test(is_admin_or_manager)
+@login_required
+@transaction.atomic
+def process_refund(request, return_id):
+    """Process a refund for a return"""
+    return_obj = get_object_or_404(Return, pk=return_id)
+    
+    if request.method == 'POST':
+        if not return_obj.refunded:
+            return_obj.refunded = True
+            return_obj.save()
+            
+            # Reduce the sale total by the refund amount
+            sale = return_obj.sale
+            sale.total_sales -= return_obj.refund_amount
+            sale.save()
+            
+            messages.success(request, f"✅ Refund of GHC {return_obj.refund_amount} processed for Return #{return_obj.receipt_code}. Sale total reduced.")
+        else:
+            messages.warning(request, "This return has already been refunded.")
+    
+    return redirect('sales:return_list')

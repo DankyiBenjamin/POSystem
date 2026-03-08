@@ -15,14 +15,15 @@ import os
 from environ import Env
 import dj_database_url
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Initialize environment variables
 env = Env()
-Env.read_env()  # Read .env file if it exists
+Env.read_env(os.path.join(BASE_DIR, ".env"))  # Read .env file if it exists
 
 ENVIRONMENT = env('ENVIRONMENT', default='development')
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 
 # Quick-start development settings - unsuitable for production

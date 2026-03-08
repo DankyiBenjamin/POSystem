@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from .models import Item, Restock, Shop
-from sales.models import Sale, Credit
+from sales.models import Sale, Credit, Return
 from django.db.models import Q
 from django.utils.timezone import now
 from .forms import ItemForm, RestockForm
@@ -10,19 +10,19 @@ from inventory.utils import get_user_shop_queryset
 
 
 def is_admin(user):
-    return user.is_authenticated and user.role == 'admin'
+    return user.is_authenticated and (user.role or '').lower() == 'admin'
 
 
 def is_manager(user):
-    return user.is_authenticated and user.role == 'manager'
+    return user.is_authenticated and (user.role or '').lower() == 'manager'
 
 
 def is_staff(user):
-    return user.is_authenticated and user.role == 'staff'
+    return user.is_authenticated and (user.role or '').lower() == 'staff'
 
 
 def is_admin_or_manager(user):
-    return user.is_authenticated and user.role in ['admin', 'manager']
+    return user.is_authenticated and (user.role or '').lower() in ['admin', 'manager']
 
 
 @login_required
@@ -32,7 +32,7 @@ def dashboard_view(request):
     user = request.user
 
     # Determine selected shop
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.GET.get('shop')
         if shop_id:
             request.session['selected_shop_id'] = shop_id
@@ -47,6 +47,13 @@ def dashboard_view(request):
     credits = Credit.objects.filter(shop=selected_shop)
     paid_credits_today = credits.filter(paid=True, paid_at__date=today)
     inventory_items = Item.objects.filter(shop=selected_shop)
+    
+    # Get returns for today (refunded returns only)
+    returns_today = Return.objects.filter(
+        returned_at__date=today, 
+        shop=selected_shop, 
+        refunded=True
+    )
 
     # Identify low stock items
     low_stock_items = [item for item in inventory_items if item.is_low_stock()]
@@ -55,11 +62,19 @@ def dashboard_view(request):
     direct_sales_total = sum(s.total_sales for s in sales_today)
     paid_credit_total = sum(c.item.price * c.quantity for c in paid_credits_today)
     total_sales_today = direct_sales_total + paid_credit_total
+    
+    # Compute refunds
+    total_refunds_today = sum(r.refund_amount for r in returns_today)
+    
+    # Net cash = Sales - Refunds (can be negative)
+    net_cash_today = total_sales_today - total_refunds_today
 
     context = {
         'selected_shop': selected_shop,
-        'available_shops': Shop.objects.all() if user.role == 'admin' else [],
+        'available_shops': Shop.objects.all() if (user.role or '').lower() == 'admin' else [],
         'total_sales_today': total_sales_today,
+        'total_refunds_today': total_refunds_today,
+        'net_cash_today': net_cash_today,
         'total_credits': credits.filter(paid=False).count(),
         'total_inventory_items': inventory_items.count(),
         'low_stock_count': len(low_stock_items),
@@ -76,7 +91,7 @@ def item_list(request):
     search_query = request.GET.get('q', '')
 
     # Determine shop
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # Get all items for the selected shop or none if no shop is selected
         base_qs = Item.objects.filter(shop_id=shop_id) if shop_id else Item.objects.none()
@@ -154,7 +169,7 @@ def restock_item(request):
 def low_stock_list(request):
     user = request.user
 
-    if user.role == 'admin':
+    if (user.role or '').lower() == 'admin':
         shop_id = request.session.get('selected_shop_id')
         # Get all items for the selected shop or none if no shop is selected
         items = Item.objects.filter(

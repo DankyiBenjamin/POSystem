@@ -1,0 +1,74 @@
+{% extends 'base.html' %} {% block content %}
+
+<div class="container py-4">
+  <div class="card shadow-sm mx-auto" style="max-width: 600px">
+    <div class="card-header bg-warning text-dark text-center">
+      <h4 class="mb-0"><i class="bi bi-arrow-return-left"></i> Return Receipt</h4>
+    </div>
+
+    <div class="card-body">
+      <h6 class="text-center text-muted">Return #: {{ return_obj.receipt_code }}</h6>
+
+      <div class="mb-3">
+        <p><strong>Date:</strong> {{ return_obj.returned_at|date:"Y-m-d H:i" }}</p>
+        <p><strong>Original Sale:</strong> {{ return_obj.sale.receipt_code }}</p>
+        <p><strong>Customer:</strong> {{ return_obj.sale.customer_name }} ({{ return_obj.sale.customer_phone_number }})</p>
+        <p><strong>Processed by:</strong> {{ return_obj.returned_by.username }}</p>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Item</th>
+              <th>Qty Returned</th>
+              <th>Refund</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ return_obj.item.name }}</td>
+              <td>{{ return_obj.quantity_returned }}</td>
+              <td>GHC {{ return_obj.refund_amount }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {% if return_obj.reason %}
+      <div class="mb-3">
+        <strong>Reason:</strong>
+        <p class="text-muted">{{ return_obj.reason }}</p>
+      </div>
+      {% endif %}
+
+      <div class="text-end mt-3">
+        <h5>
+          <span class="badge {% if return_obj.refunded %}bg-success{% else %}bg-warning{% endif %}">
+            {% if return_obj.refunded %}Refunded{% else %}Pending Refund{% endif %}
+          </span>
+        </h5>
+      </div>
+    </div>
+
+    <div class="card-footer text-center">
+      <a
+        href="{% url 'sales:return_receipt_pdf' return_obj.id %}"
+        class="btn btn-outline-primary btn-sm me-2"
+      >
+        <i class="bi bi-download"></i> Download PDF
+      </a>
+      <button
+        onclick="window.print()"
+        class="btn btn-outline-secondary btn-sm me-2"
+      >
+        <i class="bi bi-printer"></i> Print
+      </button>
+      <a href="{% url 'sales:return_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="bi bi-arrow-left-circle"></i> Back to Returns
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
