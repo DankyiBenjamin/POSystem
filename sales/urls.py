@@ -40,4 +40,10 @@ urlpatterns = [
      path('returns/', views.return_list, name='return_list'),
      path('return/refund/<int:return_id>/', views.process_refund, name='process_refund'),
 
+     # Inter-Shop Credit URLs
+     path('inter-shop/', views.inter_shop_credit_list, name='inter_shop_credit_list'),
+     path('inter-shop/new/', views.make_inter_shop_credit, name='make_inter_shop_credit'),
+     path('inter-shop/<int:credit_id>/settle/', views.settle_inter_shop_credit, name='settle_inter_shop_credit'),
+     path('inter-shop/settlements/', views.inter_shop_settlement_list, name='inter_shop_settlement_list'),
+
 ]

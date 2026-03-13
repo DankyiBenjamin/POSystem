@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils.timezone import now
-from .forms import SaleForm, CreditForm , EditCreditForm, ReturnForm
-from .models import Sale, SaleItem, Credit, Return
+from .forms import SaleForm, CreditForm , EditCreditForm, ReturnForm, InterShopCreditForm, InterShopSettlementForm
+from .models import Sale, SaleItem, Credit, Return, InterShopCredit, InterShopSettlement
 from inventory.models import Item
+from accounts.models import Shop
 from django.db import models, transaction
 
 # printing reciepts
@@ -474,3 +475,209 @@ def process_refund(request, return_id):
             messages.warning(request, "This return has already been refunded.")
     
     return redirect('sales:return_list')
+
+
+#  INTER-SHOP CREDIT SYSTEM 
+
+@user_passes_test(is_admin)
+@login_required
+@transaction.atomic
+def make_inter_shop_credit(request):
+    """Create a new inter-shop credit"""
+    if request.method == 'POST':
+        form = InterShopCreditForm(request.POST, request=request)
+        if form.is_valid():
+            credit = form.save(commit=False)
+            credit.created_by = request.user
+            
+            # Get the user's current shop (from form or session)
+            user = request.user
+            current_shop = None
+            
+            if (user.role or '').lower() == 'admin':
+                selected_shop_id = request.session.get('selected_shop_id')
+                if selected_shop_id:
+                    current_shop = Shop.objects.filter(id=selected_shop_id).first()
+            else:
+                current_shop = user.shop
+            
+            # Set from_shop to current shop (form's from_shop is disabled)
+            if current_shop:
+                credit.from_shop = current_shop
+            
+            # Handle inventory: reduce from from_shop, add to to_shop
+            from_shop = credit.from_shop
+            to_shop = credit.to_shop
+            item = credit.item
+            quantity = credit.quantity
+            
+            # Reduce quantity from from_shop
+            item.quantity -= quantity
+            item.save()
+            
+            # Add quantity to to_shop - check if item exists
+            to_shop_item = Item.objects.filter(name=item.name, shop=to_shop).first()
+            if to_shop_item:
+                # Item exists in to_shop - add quantity
+                to_shop_item.quantity += quantity
+                to_shop_item.save()
+                credit.item = to_shop_item
+            else:
+                # Create new item in to_shop (with part_number)
+                new_item = Item.objects.create(
+                    name=item.name,
+                    price=item.price,
+                    quantity=quantity,
+                    description=item.description,
+                    part_number=item.part_number,
+                    shop=to_shop
+                )
+                credit.item = new_item
+            
+            credit.save()
+            
+            messages.success(
+                request, 
+                f"✅ Transferred {credit.quantity} {credit.item.name} from "
+                f"{credit.from_shop.name} to {credit.to_shop.name}. "
+                f"Total: GHC {credit.total_amount}"
+            )
+            return redirect('sales:inter_shop_credit_list')
+    else:
+        form = InterShopCreditForm(request=request)
+    
+    return render(request, 'sales/make_inter_shop_credit.html', {'form': form})
+
+
+@login_required
+def inter_shop_credit_list(request):
+    """List all inter-shop credits"""
+    user = request.user
+    credits = InterShopCredit.objects.all().order_by('-created_at')
+    
+    # Filter by user's shop for non-admin users
+    if (user.role or '').lower() != 'admin':
+        if user.shop:
+            credits = credits.filter(from_shop=user.shop) | credits.filter(to_shop=user.shop)
+        else:
+            credits = InterShopCredit.objects.none()
+    
+    # Calculate totals
+    total_owed = 0  # What THIS shop owes others
+    total_owing = 0  # What OTHERS owe THIS shop
+    
+    if user.shop:
+        total_owed = InterShopCredit.objects.filter(
+            from_shop=user.shop
+        ).exclude(status='settled').aggregate(
+            total=models.Sum('total_amount') - models.Sum('settled_amount')
+        )['total'] or 0
+        
+        total_owing = InterShopCredit.objects.filter(
+            to_shop=user.shop
+        ).exclude(status='settled').aggregate(
+            total=models.Sum('total_amount') - models.Sum('settled_amount')
+        )['total'] or 0
+    
+    return render(request, 'sales/inter_shop_credit_list.html', {
+        'credits': credits,
+        'total_owed': total_owed,
+        'total_owing': total_owing
+    })
+
+
+@user_passes_test(is_admin)
+@login_required
+@transaction.atomic
+def settle_inter_shop_credit(request, credit_id):
+    """Settle an inter-shop credit"""
+    credit = get_object_or_404(InterShopCredit, pk=credit_id)
+    
+    if request.method == 'POST':
+        amount_str = request.POST.get('amount')
+        payment_method = request.POST.get('payment_method', 'cash')
+        notes = request.POST.get('notes', '')
+        
+        # Validate amount is provided
+        if not amount_str:
+            messages.error(request, "Please enter an amount.")
+            return redirect('sales:settle_inter_shop_credit', credit_id=credit_id)
+        
+        try:
+            from decimal import Decimal
+            amount = Decimal(amount_str)
+            
+            if amount <= 0:
+                messages.error(request, "Amount must be greater than 0.")
+                return redirect('sales:settle_inter_shop_credit', credit_id=credit_id)
+            
+            if amount > credit.remaining_amount:
+                messages.error(request, f"Amount exceeds remaining balance of GHC {credit.remaining_amount}.")
+                return redirect('sales:settle_inter_shop_credit', credit_id=credit_id)
+            
+            # Create settlement
+            settlement = InterShopSettlement.objects.create(
+                from_shop=credit.from_shop,
+                to_shop=credit.to_shop,
+                amount=amount,
+                payment_method=payment_method,
+                notes=notes,
+                created_by=request.user
+            )
+            settlement.settled_credits.add(credit)
+            
+            # Update credit
+            credit.settled_amount += amount
+            
+            if credit.remaining_amount <= 0:
+                credit.status = 'settled'
+            else:
+                credit.status = 'partial'
+            
+            credit.save()
+            
+            # If payment is cash, add to receiving shop's daily sales
+            if payment_method == 'cash':
+                # Create a sale record for the cash received
+                # The shop that GAVE items (from_shop) receives the cash
+                sale = Sale.objects.create(
+                    closed_by=request.user,
+                    total_sales=amount,
+                    shop=credit.from_shop,  # The shop that gave items receives the payment
+                    customer_name=f"Inter-Shop: {credit.to_shop.name}",
+                    customer_phone_number="N/A"
+                )
+                messages.info(request, f"💰 GHC {amount} added to {credit.from_shop.name}'s daily sales.")
+            
+            messages.success(
+                request, 
+                f"✅ Settlement of GHC {amount} recorded. "
+                f"Remaining: GHC {credit.remaining_amount}"
+            )
+            return redirect('sales:inter_shop_credit_list')
+            
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid amount.")
+            return redirect('sales:settle_inter_shop_credit', credit_id=credit_id)
+    
+    return render(request, 'sales/settle_inter_shop_credit.html', {
+        'credit': credit
+    })
+
+
+@login_required
+def inter_shop_settlement_list(request):
+    """List all inter-shop settlements"""
+    user = request.user
+    settlements = InterShopSettlement.objects.all().order_by('-created_at')
+    
+    # Filter by user's shop for non-admin users
+    if (user.role or '').lower() != 'admin':
+        if user.shop:
+            settlements = settlements.filter(from_shop=user.shop) | settlements.filter(to_shop=user.shop)
+        else:
+            settlements = InterShopSettlement.objects.none()
+    
+    return render(request, 'sales/inter_shop_settlement_list.html', {
+        'settlements': settlements
+    })

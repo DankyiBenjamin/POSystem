@@ -9,6 +9,7 @@ urlpatterns = [
     path('item/restock/', views.restock_item, name='restock_item'),
     path('items/low-stock/', views.low_stock_list, name='low_stock_list'),
     path('items/delete/<int:item_id>/', views.delete_item, name='delete_item'),
+    path('api/items/', views.get_items_by_shop, name='get_items_by_shop'),
 
 
 ]

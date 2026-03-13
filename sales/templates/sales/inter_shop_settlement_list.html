@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Inter-Shop Settlements</h2>
+        <a href="{% url 'sales:inter_shop_credit_list' %}" class="btn btn-secondary">
+            Back to Credits
+        </a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            {% if settlements %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>From Shop</th>
+                            <th>To Shop</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Created By</th>
+                            <th>Date</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for settlement in settlements %}
+                        <tr>
+                            <td>{{ settlement.from_shop.name }}</td>
+                            <td>{{ settlement.to_shop.name }}</td>
+                            <td>GHC {{ settlement.amount|floatformat:2 }}</td>
+                            <td>
+                                {% if settlement.payment_method == 'cash' %}
+                                    <span class="badge bg-primary">Cash</span>
+                                {% elif settlement.payment_method == 'transfer' %}
+                                    <span class="badge bg-info">Transfer</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Item</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ settlement.created_by.username }}</td>
+                            <td>{{ settlement.created_at|date:"M d, Y H:i" }}</td>
+                            <td>{{ settlement.notes|truncatechars:30|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                No settlements recorded yet.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

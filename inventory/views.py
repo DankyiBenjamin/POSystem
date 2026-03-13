@@ -6,6 +6,7 @@ from sales.models import Sale, Credit, Return
 from django.db.models import Q
 from django.utils.timezone import now
 from .forms import ItemForm, RestockForm
+from django.http import JsonResponse
 from inventory.utils import get_user_shop_queryset
 
 
@@ -192,6 +193,21 @@ def delete_item(request, item_id):
         messages.success(request, f"✅ '{item.name}' has been deleted from inventory.")
     messages.error(request, f"❌ Failed to delete '{item.name}'.")
     return redirect('item_list')
+
+
+# API endpoint to get items by shop (for inter-shop credit form)
+@login_required
+def get_items_by_shop(request):
+    """API to get items filtered by shop ID"""
+    shop_id = request.GET.get('shop_id')
+    
+    if not shop_id:
+        return JsonResponse({'error': 'shop_id required'}, status=400)
+    
+    items = Item.objects.filter(shop_id=shop_id).values('id', 'name', 'quantity', 'price')
+    return JsonResponse(list(items), safe=False)
+
+
 # def low_stock_list(request):
 #     # Get shop-filtered items
 
