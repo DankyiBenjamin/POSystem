@@ -19,6 +19,12 @@
         padding-top: 70px;
       }
 
+      /* Navbar solid background - fixes transparency issue */
+      .navbar {
+        background-color: var(--bs-body-bg, #fff);
+        backdrop-filter: none;
+      }
+
       /* Optional: wrap long usernames on small screens */
       .navbar .dropdown-toggle {
         max-width: 130px;
