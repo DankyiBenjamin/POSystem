@@ -1,6 +1,6 @@
 {% load static %} {% load shop_tags %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -47,7 +47,7 @@
   <body>
     {% if user.is_authenticated %} {% get_selected_shop as selected_shop %}
     <nav
-      class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom"
+      class="navbar navbar-expand-lg shadow-sm fixed-top border-bottom"
     >
       <div class="container-fluid px-3 px-md-4">
         <a
@@ -119,6 +119,12 @@
           </ul>
 
           <ul class="navbar-nav ms-auto align-items-center">
+            <!-- Dark Mode Toggle -->
+            <li class="nav-item me-2">
+              <button class="btn btn-link nav-link" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                <i class="bi bi-moon-fill" id="theme-icon"></i>
+              </button>
+            </li>
             <li class="nav-item dropdown">
               <a
                 class="nav-link dropdown-toggle"
@@ -183,5 +189,49 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+      // Check for saved theme preference, otherwise use system preference
+      function getTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+          return savedTheme;
+        }
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      
+      // Apply theme
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        localStorage.setItem('theme', theme);
+        updateThemeIcon(theme);
+      }
+      
+      // Update icon based on theme
+      function updateThemeIcon(theme) {
+        const icon = document.getElementById('theme-icon');
+        if (icon) {
+          if (theme === 'dark') {
+            icon.classList.remove('bi-moon-fill');
+            icon.classList.add('bi-sun-fill');
+          } else {
+            icon.classList.remove('bi-sun-fill');
+            icon.classList.add('bi-moon-fill');
+          }
+        }
+      }
+      
+      // Toggle theme
+      function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(newTheme);
+      }
+      
+      // Initialize theme on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        applyTheme(getTheme());
+      });
+    </script>
   </body>
 </html>
