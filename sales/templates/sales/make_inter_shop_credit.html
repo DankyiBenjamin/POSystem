@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Create Inter-Shop Credit Transfer</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post" class="form">
+                {% csrf_token %}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="id_from_shop" class="form-label">From Shop (Giving Items)</label>
+                        {{ form.from_shop }}
+                        {% if form.from_shop.errors %}
+                            <div class="text-danger">{{ form.from_shop.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="id_to_shop" class="form-label">To Shop (Receiving Items)</label>
+                        {{ form.to_shop }}
+                        {% if form.to_shop.errors %}
+                            <div class="text-danger">{{ form.to_shop.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="id_item" class="form-label">Item</label>
+                        {{ form.item }}
+                        {% if form.item.errors %}
+                            <div class="text-danger">{{ form.item.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted">Select an item from the "From Shop" inventory</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_quantity" class="form-label">Quantity</label>
+                        {{ form.quantity }}
+                        {% if form.quantity.errors %}
+                            <div class="text-danger">{{ form.quantity.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_unit_price" class="form-label">Unit Price (GHC)</label>
+                        {{ form.unit_price }}
+                        {% if form.unit_price.errors %}
+                            <div class="text-danger">{{ form.unit_price.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_notes" class="form-label">Notes (Optional)</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}
+                        <div class="text-danger">{{ form.notes.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="alert alert-info">
+                    <strong>Note:</strong> When you submit, the item quantity will be automatically reduced 
+                    from the "From Shop" inventory. A credit record will be created for the "To Shop".
+                </div>
+                
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Create Transfer</button>
+                    <a href="{% url 'sales:inter_shop_credit_list' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fromShopSelect = document.getElementById('id_from_shop');
+    const itemSelect = document.getElementById('id_item');
+    const quantityInput = document.getElementById('id_quantity');
+    const unitPriceInput = document.getElementById('id_unit_price');
+    
+    // Function to update item options based on selected shop
+    function updateItemOptions() {
+        const fromShopId = fromShopSelect.value;
+        
+        if (!fromShopId) {
+            itemSelect.innerHTML = '<option value="">-- Select a From Shop first --</option>';
+            return;
+        }
+        
+        // Make AJAX call to get items for the selected shop
+        fetch(`/api/items/?shop_id=${fromShopId}`)
+            .then(response => response.json())
+            .then(data => {
+                itemSelect.innerHTML = '<option value="">-- Select an item from the From Shop inventory --</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.name} (Stock: ${item.quantity}) - GHC ${item.price}`;
+                    itemSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching items:', error);
+                itemSelect.innerHTML = '<option value="">-- Error loading items --</option>';
+            });
+    }
+    
+    // Listen for shop selection changes
+    fromShopSelect.addEventListener('change', updateItemOptions);
+    
+    // Check if a shop is already selected on page load
+    if (fromShopSelect.value) {
+        updateItemOptions();
+    }
+    
+    // Calculate total when quantity or price changes
+    function calculateTotal() {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const price = parseFloat(unitPriceInput.value) || 0;
+        const total = quantity * price;
+        console.log(`Total: ${total}`);
+    }
+    
+    quantityInput.addEventListener('input', calculateTotal);
+    unitPriceInput.addEventListener('input', calculateTotal);
+});
+</script>
+{% endblock %}

@@ -166,3 +166,87 @@ class Return(models.Model):
     def __str__(self):
         return f"{self.quantity_returned} of {self.item.name} returned from Sale {self.sale.receipt_code}"
 
+
+class InterShopCredit(models.Model):
+    """Model for tracking credits between shops"""
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('settled', 'Settled'),
+        ('partial', 'Partial'),
+    )
+    
+    from_shop = models.ForeignKey(
+        Shop, on_delete=models.CASCADE, related_name='credits_given')
+    to_shop = models.ForeignKey(
+        Shop, on_delete=models.CASCADE, related_name='credits_received')
+    item = models.ForeignKey(
+        Item, on_delete=models.CASCADE, related_name='inter_shop_credits')
+    quantity = models.IntegerField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default='pending')
+    settled_amount = models.DecimalField(
+        max_digits=15, decimal_places=2, default=0)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    settled_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True, null=True)
+    receipt_code = models.CharField(
+        max_length=100, unique=True, blank=True, null=True)
+    
+    def save(self, *args, **kwargs):
+        # Calculate total amount
+        self.total_amount = self.quantity * self.unit_price
+        
+        # Auto-generate receipt code
+        if not self.receipt_code:
+            year = timezone.now().year
+            count = InterShopCredit.objects.count() + 1
+            self.receipt_code = f"ISC-{year}-{count:04d}"
+        
+        # Auto-set settled_at when fully settled
+        if self.status == 'settled' and self.settled_at is None:
+            self.settled_at = timezone.now()
+        
+        super().save(*args, **kwargs)
+    
+    @property
+    def remaining_amount(self):
+        """Calculate remaining amount to be settled"""
+        return self.total_amount - self.settled_amount
+    
+    @property
+    def is_settled(self):
+        """Check if fully settled"""
+        return self.status == 'settled' or self.remaining_amount <= 0
+    
+    def __str__(self):
+        return f"{self.quantity} {self.item.name} from {self.from_shop} to {self.to_shop}"
+
+
+class InterShopSettlement(models.Model):
+    """Model for tracking settlements between shops"""
+    PAYMENT_METHOD_CHOICES = (
+        ('cash', 'Cash'),
+        ('transfer', 'Transfer'),
+        ('item', 'Item'),
+    )
+    
+    from_shop = models.ForeignKey(
+        Shop, on_delete=models.CASCADE, related_name='settlements_made')
+    to_shop = models.ForeignKey(
+        Shop, on_delete=models.CASCADE, related_name='settlements_received')
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    payment_method = models.CharField(
+        max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cash')
+    settled_credits = models.ManyToManyField(
+        InterShopCredit, related_name='settlements', blank=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return f"{self.amount} from {self.from_shop} to {self.to_shop}"

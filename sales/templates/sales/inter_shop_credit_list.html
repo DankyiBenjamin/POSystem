@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Inter-Shop Credits</h2>
+        {% if user.role|lower == 'admin' %}
+        <a href="{% url 'sales:make_inter_shop_credit' %}" class="btn btn-primary">
+            + New Transfer
+        </a>
+        {% endif %}
+    </div>
+    
+    {% if user.role|lower != 'admin' and user.role|lower != 'manager' and user.role|lower != 'staff' %}
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">Total Owed TO Others</h5>
+                    <h3>GHC {{ total_owed|floatformat:2 }}</h3>
+                    <small>Items your shop owes to other shops</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Total Owed BY Others</h5>
+                    <h3>GHC {{ total_owing|floatformat:2 }}</h3>
+                    <small>Items other shops owe to your shop</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="card">
+        <div class="card-body">
+            {% if credits %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Receipt Code</th>
+                            <th>From Shop</th>
+                            <th>To Shop</th>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                            <th>Paid</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for credit in credits %}
+                        <tr>
+                            <td>{{ credit.receipt_code }}</td>
+                            <td>{{ credit.from_shop.name }}</td>
+                            <td>{{ credit.to_shop.name }}</td>
+                            <td>{{ credit.item.name }}</td>
+                            <td>{{ credit.quantity }}</td>
+                            <td>GHC {{ credit.unit_price|floatformat:2 }}</td>
+                            <td>GHC {{ credit.total_amount|floatformat:2 }}</td>
+                            <td>GHC {{ credit.settled_amount|floatformat:2 }}</td>
+                            <td>
+                                {% if credit.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif credit.status == 'partial' %}
+                                    <span class="badge bg-info">Partial</span>
+                                {% else %}
+                                    <span class="badge bg-success">Settled</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ credit.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                {% if credit.status != 'settled' and user.role|lower == 'admin' %}
+                                <a href="{% url 'sales:settle_inter_shop_credit' credit.id %}" 
+                                   class="btn btn-sm btn-outline-success">
+                                    Settle
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                No inter-shop credits found. 
+                {% if user.role|lower != 'staff' %}
+                <a href="{% url 'sales:make_inter_shop_credit' %}">Create a new transfer</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if user.role|lower != 'staff' %}
+    <div class="mt-3">
+        <a href="{% url 'sales:inter_shop_settlement_list' %}" class="btn btn-outline-secondary">
+            View Settlement History
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

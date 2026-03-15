@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Settle Inter-Shop Credit</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            Credit Details
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Receipt Code:</strong><br>
+                    {{ credit.receipt_code }}
+                </div>
+                <div class="col-md-4">
+                    <strong>From Shop:</strong><br>
+                    {{ credit.from_shop.name }}
+                </div>
+                <div class="col-md-4">
+                    <strong>To Shop:</strong><br>
+                    {{ credit.to_shop.name }}
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Item:</strong><br>
+                    {{ credit.item.name }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Quantity:</strong><br>
+                    {{ credit.quantity }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Total Amount:</strong><br>
+                    GHC {{ credit.total_amount|floatformat:2 }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Remaining:</strong><br>
+                    <span class="text-danger">GHC {{ credit.remaining_amount|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post" class="form">
+                {% csrf_token %}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="id_amount" class="form-label">Amount to Pay (GHC)</label>
+                        <input type="number" name="amount" id="id_amount" 
+                               class="form-control" step="0.01" min="0.01" 
+                               max="{{ credit.remaining_amount }}" 
+                               placeholder="Enter amount up to {{ credit.remaining_amount }}" 
+                               required>
+                        <small class="text-muted">Maximum: GHC {{ credit.remaining_amount|floatformat:2 }}</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="id_payment_method" class="form-label">Payment Method</label>
+                        <select name="payment_method" id="id_payment_method" class="form-select">
+                            <option value="cash">Cash</option>
+                            <option value="transfer">Bank Transfer</option>
+                            <option value="item">Item Exchange</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_notes" class="form-label">Notes (Optional)</label>
+                    <textarea name="notes" id="id_notes" class="form-control" 
+                              rows="3" placeholder="Add any notes about this settlement"></textarea>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This action will record a settlement. 
+                    Please ensure the payment has been received before submitting.
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">Confirm Settlement</button>
+                    <a href="{% url 'sales:inter_shop_credit_list' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('id_amount');
+    const maxAmount = {{ credit.remaining_amount }};
+    
+    amountInput.addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        if (value > maxAmount) {
+            this.value = maxAmount;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -11,11 +11,20 @@ class Item(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.IntegerField()
     description = models.TextField(blank=True, null=True)
-    part_number = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    part_number = models.CharField(max_length=100, blank=True, null=True)
     total_stock_added = models.IntegerField(default=0)
     low_stock_threshold = models.IntegerField(default=5)
     last_updated = models.DateTimeField(auto_now=True)
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, null=True)
+    
+    class Meta:
+        # Part number should be unique within a shop, not across shops
+        constraints = [
+            models.UniqueConstraint(
+                fields=['part_number', 'shop'], 
+                name='unique_part_number_per_shop'
+            )
+        ]
 
     def is_low_stock(self):
         return self.quantity <= self.low_stock_threshold
